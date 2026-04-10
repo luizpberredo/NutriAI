@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="NutriAI"/>
+<link rel="apple-touch-icon" href="https://fav.farm/🥗"/>
+<title>NutriAI</title>
+<style>
+:root{--green:#1D9E75;--green-light:#E1F5EE;--green-dark:#0F6E56;--amber:#BA7517;--pink:#D4537E;--bg:#ffffff;--bg2:#f5f5f3;--bg3:#eeede8;--text:#1a1a18;--text2:#5f5e5a;--text3:#888780;--border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);--r:12px;--rs:8px;--sbg:#E1F5EE;--stxt:#0F6E56;--wbg:#FAEEDA;--wtxt:#633806;--dbg:#FCEBEB;--dtxt:#791F1F;--ibg:#E6F1FB;--itxt:#0C447C}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;--text:#f0efe8;--text2:#b4b2a9;--text3:#888780;--border:rgba(255,255,255,0.12);--border2:rgba(255,255,255,0.22);--green-light:#04342C;--sbg:#085041;--stxt:#9FE1CB;--wbg:#633806;--wtxt:#FAC775;--dbg:#501313;--dtxt:#F7C1C1;--ibg:#042C53;--itxt:#B5D4F4}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;padding-bottom:84px}
+.app{max-width:430px;margin:0 auto}
+.header{background:var(--bg);border-bottom:0.5px solid var(--border);padding:16px 20px 12px;position:sticky;top:0;z-index:10}
+.hrow{display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:20px;font-weight:700;color:var(--text)}
+.hsub{font-size:12px;color:var(--text3);margin-top:2px}
+.hdate{font-size:12px;color:var(--text3);background:var(--bg2);padding:4px 10px;border-radius:20px;border:0.5px solid var(--border)}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:0.5px solid var(--border);display:flex;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;cursor:pointer;border:none;background:none;color:var(--text3);font-family:inherit;transition:color .15s}
+.nav-item.active{color:var(--green)}
+.nav-icon{font-size:20px;line-height:1}
+.nav-label{font-size:10px;font-weight:500}
+.section{display:none;padding:16px}
+.section.active{display:block}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.ctitle{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px}
+.csub{font-size:12px;color:var(--text3);margin-bottom:12px;margin-top:-8px}
+.ring-wrap{display:flex;align-items:center;gap:20px}
+.ring-chart{position:relative;width:88px;height:88px;flex-shrink:0}
+.ring-chart svg{transform:rotate(-90deg)}
+.ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.ring-kcal{font-size:18px;font-weight:700;color:var(--text);line-height:1}
+.ring-lbl{font-size:10px;color:var(--text3);margin-top:2px}
+.macros{flex:1;display:flex;flex-direction:column;gap:8px}
+.mrow{display:flex;align-items:center;gap:8px}
+.mdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.mname{font-size:11px;color:var(--text3);width:46px}
+.mbar-bg{flex:1;height:4px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.mbar{height:100%;border-radius:2px;transition:width .4s}
+.mval{font-size:11px;color:var(--text);min-width:30px;text-align:right}
+.prow{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:4px;margin-top:14px}
+.pbar{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.pfill{height:100%;border-radius:3px;transition:width .5s}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.bg{background:var(--sbg);color:var(--stxt)}
+.ba{background:var(--wbg);color:var(--wtxt)}
+.br{background:var(--dbg);color:var(--dtxt)}
+.meal-sec{margin-bottom:2px}
+.meal-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 0 6px}
+.meal-t{font-size:14px;font-weight:700;color:var(--text)}
+.meal-k{font-size:12px;color:var(--text3)}
+.meal-items{border-top:0.5px solid var(--border)}
+.fitem{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.fitem:last-child{border-bottom:none}
+.fleft{display:flex;align-items:center;gap:10px}
+.fthumb{width:42px;height:42px;border-radius:8px;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0}
+.fname{font-size:13px;color:var(--text)}
+.fportion{font-size:11px;color:var(--text3);margin-top:1px}
+.fkcal{font-size:12px;color:var(--text2);white-space:nowrap}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.sc{background:var(--bg2);border-radius:var(--rs);padding:12px}
+.slbl{font-size:11px;color:var(--text3);margin-bottom:4px}
+.sval{font-size:22px;font-weight:700;color:var(--text)}
+.sunit{font-size:12px;color:var(--text3)}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.mbtn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 8px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);cursor:pointer;font-family:inherit;transition:all .15s}
+.mbtn.sel{border:2px solid var(--green);background:var(--green-light)}
+.mico{font-size:26px}
+.mlbl{font-size:14px;font-weight:700;color:var(--text)}
+.msub{font-size:11px;color:var(--text3);text-align:center;line-height:1.3}
+.pdrop{border:1.5px dashed var(--border2);border-radius:var(--r);padding:32px 16px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:12px}
+.pdrop:active{background:var(--bg2)}
+.pdrop.hasimg{padding:0;border-style:solid;overflow:hidden}
+.ppreview{width:100%;max-height:260px;object-fit:cover;border-radius:10px;display:block}
+.chgphoto{display:block;text-align:center;font-size:12px;color:var(--green);padding:8px;cursor:pointer;border-top:0.5px solid var(--border)}
+.dico{font-size:36px;margin-bottom:10px}
+.dtitle{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.dsub{font-size:12px;color:var(--text3)}
+input[type=text],input[type=number],textarea,select{width:100%;padding:12px 14px;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:15px;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;outline:none;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--green)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
+.bp{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.bp:active{opacity:.8}
+.bp:disabled{opacity:.45;cursor:not-allowed}
+.bo{padding:8px 14px;background:transparent;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:13px;color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.bo:active{background:var(--bg2)}
+.bd{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:transparent;border:0.5px dashed var(--border2);border-radius:var(--rs);font-size:13px;color:var(--text3);cursor:pointer;font-family:inherit;margin-top:6px}
+.air{background:var(--bg2);border-radius:var(--rs);padding:12px 14px;margin-bottom:10px;font-size:13px;color:var(--text);line-height:1.5}
+.air.loading{color:var(--text3);font-style:italic}
+.clist{display:flex;flex-direction:column;gap:8px}
+.citem{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rs);padding:10px 12px}
+.cname{font-size:13px;font-weight:700;color:var(--text)}
+.cmacro{font-size:11px;color:var(--text3);margin-top:2px}
+.cdone{background:var(--sbg)!important;color:var(--stxt)!important;border-color:transparent!important}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{padding:7px 12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:20px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap}
+.tag:active{background:var(--green-light);color:var(--green-dark)}
+.wrow{display:flex;gap:8px;margin-bottom:10px}
+.wrow input{flex:1}
+.chart-wrap{position:relative;height:150px}
+.tipitem{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.tipitem:last-child{border-bottom:none}
+.tipico{width:32px;height:32px;border-radius:50%;background:var(--ibg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.tiptxt{font-size:13px;color:var(--text);font-weight:600}
+.tipsub{font-size:12px;color:var(--text3);margin-top:2px;line-height:1.4}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="hrow">
+      <div><h1>NutriAI</h1><div class="hsub">Assistente nutricional inteligente</div></div>
+      <div class="hdate" id="hdate"></div>
+    </div>
+  </div>
+
+  <!-- TODAY -->
+  <div class="section active" id="tab-hoje">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span class="ctitle" style="margin:0">Calorias de hoje</span>
+        <span id="cal-badge" class="badge bg">dentro da meta</span>
+      </div>
+      <div class="ring-wrap">
+        <div class="ring-chart">
+          <svg width="88" height="88" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="34" fill="none" stroke="var(--bg2)" stroke-width="11"/>
+            <circle id="ring-fill" cx="44" cy="44" r="34" fill="none" stroke="var(--green)" stroke-width="11" stroke-dasharray="213.6" stroke-dashoffset="106" stroke-linecap="round"/>
+          </svg>
+          <div class="ring-center"><div class="ring-kcal" id="kcal-num">950</div><div class="ring-lbl">kcal</div></div>
+        </div>
+        <div class="macros">
+          <div class="mrow"><div class="mdot" style="background:var(--green)"></div><span class="mname">Proteína</span><div class="mbar-bg"><div class="mbar" id="bp" style="background:var(--green);width:60%"></div></div><span class="mval" id="vp">72g</span></div>
+          <div class="mrow"><div class="mdot" style="background:var(--amber)"></div><span class="mname">Carbo</span><div class="mbar-bg"><div class="mbar" id="bc" style="background:var(--amber);width:45%"></div></div><span class="mval" id="vc">108g</span></div>
+          <div class="mrow"><div class="mdot" style="background:var(--pink)"></div><span class="mname">Gordura</span><div class="mbar-bg"><div class="mbar" id="bf" style="background:var(--pink);width:35%"></div></div><span class="mval" id="vf">28g</span></div>
+        </div>
+      </div>
+      <div class="prow"><span>Meta: 1800 kcal</span><span id="pct" style="font-weight:700;color:var(--text)">53%</span></div>
+      <div class="pbar"><div class="pfill" id="cprog" style="background:var(--green);width:53%"></div></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Refeições do dia</div>
+      <div id="meals-list"></div>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="section" id="tab-registrar">
+    <div class="card">
+      <div class="ctitle" style="margin-bottom:4px">Como quer registrar?</div>
+      <div class="csub">Escolha o método</div>
+      <div class="mgrid">
+        <button class="mbtn sel" id="btn-foto" onclick="selMethod('foto')">
+          <span class="mico">📷</span><span class="mlbl">Foto</span><span class="msub">Tire ou envie uma foto do prato</span>
+        </button>
+        <button class="mbtn" id="btn-texto" onclick="selMethod('texto')">
+          <span class="mico">✏️</span><span class="mlbl">Texto</span><span class="msub">Descreva o que comeu</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="panel-foto">
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:4px">Foto da refeição</div>
+        <div class="csub">A IA identifica automaticamente — funciona com qualquer prato, embalagem ou shake!</div>
+        <select id="fmsel" style="margin-bottom:12px">
+          <option value="0">Café da manhã</option>
+          <option value="1" selected>Almoço</option>
+          <option value="2">Lanche</option>
+          <option value="3">Jantar</option>
+        </select>
+        <input type="file" id="finput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)"/>
+        <div class="pdrop" id="pdrop" onclick="document.getElementById('finput').click()">
+          <div class="dico">📷</div>
+          <div class="dtitle">Toque para tirar foto</div>
+          <div class="dsub">ou escolha da galeria — shake, prato, embalagem...</div>
+        </div>
+        <div id="foto-out"></div>
+      </div>
+    </div>
+
+    <div id="panel-texto" style="display:none">
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:4px">Descreva o que comeu</div>
+        <div class="csub">A IA estima calorias e macros automaticamente</div>
+        <select id="tmsel" style="margin-bottom:12px">
+          <option value="0">Café da manhã</option>
+          <option value="1" selected>Almoço</option>
+          <option value="2">Lanche</option>
+          <option value="3">Jantar</option>
+        </select>
+        <textarea id="fdesc" rows="3" placeholder="Ex: shake de whey DUX chocolate 300ml com leite..." style="margin-bottom:10px;resize:none;border-radius:var(--rs)"></textarea>
+        <button class="bp" id="btn-analisar" onclick="analyzeText()">Analisar com IA</button>
+        <div id="texto-out" style="margin-top:10px"></div>
+        <div style="margin-top:14px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">Sugestões rápidas</div>
+          <div class="tags">
+            <span class="tag" onclick="quickAdd('Shake de whey protein DUX chocolate 40g com 300ml de leite desnatado')">🥤 Shake whey DUX</span>
+            <span class="tag" onclick="quickAdd('Café da manhã com pão integral, ovo mexido e café com leite')">☕ Café da manhã</span>
+            <span class="tag" onclick="quickAdd('Almoço com arroz, feijão, frango grelhado e salada')">🍽️ Almoço executivo</span>
+            <span class="tag" onclick="quickAdd('Açaí 300ml com banana e granola')">🫐 Açaí 300ml</span>
+            <span class="tag" onclick="quickAdd('Pão de queijo 3 unidades médias')">🧀 Pão de queijo</span>
+            <span class="tag" onclick="quickAdd('Jantar leve com sopa de legumes e torrada integral')">🍜 Jantar leve</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEIGHT -->
+  <div class="section" id="tab-peso">
+    <div class="sgrid">
+      <div class="sc"><div class="slbl">Peso atual</div><div><span class="sval" id="cur-w">72.4</span><span class="sunit"> kg</span></div></div>
+      <div class="sc"><div class="slbl">Meta</div><div><span class="sval">68</span><span class="sunit"> kg</span></div></div>
+      <div class="sc"><div class="slbl">Variação (7d)</div><div><span class="sval" style="color:var(--green)">-0.6</span><span class="sunit"> kg</span></div></div>
+      <div class="sc"><div class="slbl">IMC</div><div><span class="sval" id="imc">23.8</span></div></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Registrar peso de hoje</div>
+      <div class="wrow">
+        <input type="number" id="nw" placeholder="Ex: 72.0" step="0.1" min="30" max="300"/>
+        <button class="bo" onclick="logWeight()" style="padding:12px 20px">Salvar</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3)">Pese-se sempre no mesmo horário.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Evolução — últimos 14 dias</div>
+      <div class="chart-wrap"><canvas id="wchart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="section" id="tab-insights">
+    <div class="card">
+      <div class="ctitle">Resumo da semana</div>
+      <div class="sgrid" style="margin-bottom:0">
+        <div class="sc"><div class="slbl">Média calórica</div><div><span class="sval">1650</span><span class="sunit"> kcal</span></div></div>
+        <div class="sc"><div class="slbl">Dias na meta</div><div><span class="sval">5</span><span class="sunit">/7</span></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Dicas personalizadas</div>
+      <div id="tips-list"></div>
+    </div>
+    <div class="card">
+      <div class="ctitle" style="margin-bottom:8px">Perguntar à IA</div>
+      <textarea id="ia-q" rows="2" placeholder="Ex: Quantas calorias tem um shake DUX?" style="resize:none;border-radius:var(--rs);margin-bottom:10px"></textarea>
+      <button class="bp" onclick="askIA()">Perguntar</button>
+      <div id="ia-resp" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <button class="bd" onclick="quickIA('Me dê um plano alimentar semanal de 1800 kcal com alimentos brasileiros')">📋 Gerar plano alimentar semanal</button>
+      <button class="bd" onclick="quickIA('Quais substituições saudáveis posso fazer para emagrecer sem passar fome?')">🔄 Substituições saudáveis</button>
+      <button class="bd" onclick="quickIA('Como aumentar proteína com alimentos brasileiros e suplementos acessíveis?')">💪 Como comer mais proteína</button>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="goTab('hoje',this)"><span class="nav-icon">🏠</span><span class="nav-label">Hoje</span></button>
+    <button class="nav-item" onclick="goTab('registrar',this)"><span class="nav-icon">➕</span><span class="nav-label">Registrar</span></button>
+    <button class="nav-item" onclick="goTab('peso',this)"><span class="nav-icon">⚖️</span><span class="nav-label">Peso</span></button>
+    <button class="nav-item" onclick="goTab('insights',this)"><span class="nav-icon">💡</span><span class="nav-label">Insights</span></button>
+  </nav>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const state={kcal:950,goal:1800,prot:72,carb:108,fat:28,
+  meals:[
+    {name:'Café da manhã',kcal:320,items:[{n:'Tapioca com queijo',p:'80g',k:220,img:null},{n:'Café com leite',p:'200ml',k:100,img:null}]},
+    {name:'Almoço',kcal:630,items:[{n:'Arroz integral',p:'4 col.',k:210,img:null},{n:'Feijão carioca',p:'1 concha',k:120,img:null},{n:'Frango grelhado',p:'1 filé',k:230,img:null},{n:'Salada + azeite',p:'à vontade',k:70,img:null}]},
+    {name:'Lanche',kcal:0,items:[]},
+    {name:'Jantar',kcal:0,items:[]}
+  ],
+  wlog:[73.0,72.9,72.8,72.7,72.8,72.6,72.5,72.6,72.4,72.5,72.4,72.3,72.4,72.4]
+};
+let curImg=null, curImgUrl=null, wChart=null;
+
+document.getElementById('hdate').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});
+
+function goTab(t,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  if(t==='peso')setTimeout(renderWChart,60);
+}
+
+function selMethod(m){
+  document.getElementById('btn-foto').classList.toggle('sel',m==='foto');
+  document.getElementById('btn-texto').classList.toggle('sel',m==='texto');
+  document.getElementById('panel-foto').style.display=m==='foto'?'block':'none';
+  document.getElementById('panel-texto').style.display=m==='texto'?'block':'none';
+}
+
+function handleFile(e){
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const du=ev.target.result;
+    curImgUrl=du; curImg=du.split(',')[1];
+    const drop=document.getElementById('pdrop');
+    drop.classList.add('hasimg');
+    drop.innerHTML=`<img src="${du}" class="ppreview" alt="foto"/><span class="chgphoto" onclick="document.getElementById('finput').click()">Trocar foto</span>`;
+    analyzePhoto(curImg, f.type||'image/jpeg');
+  };
+  r.readAsDataURL(f);
+}
+
+async function callProxy(messages){
+  const r=await fetch('/api/analyze',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages})
+  });
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const d=await r.json();
+  return d.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+}
+
+async function analyzePhoto(b64,mime){
+  const out=document.getElementById('foto-out');
+  out.innerHTML='<div class="air loading"><span class="spinner"></span>Analisando a foto — identificando alimentos...</div>';
+  try{
+    const txt=await callProxy([{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:mime,data:b64}},
+      {type:'text',text:'Você é um nutricionista especializado em culinária brasileira e suplementos fitness. Analise esta foto — pode ser um prato, embalagem de suplemento (whey, creatina, etc.), lanche ou bebida. Responda SOMENTE JSON sem markdown: {"itens":[{"nome":"nome do alimento ou suplemento","porcao":"dose ou gramas estimados","kcal":220,"prot":10,"carb":30,"fat":5}],"totalKcal":220,"analise":"avaliação nutricional em até 70 chars","qualidade":"boa|razoavel|melhorar"}'}
+    ]}]);
+    const p=JSON.parse(txt);
+    window._pItems=p.itens;
+    const qc=p.qualidade==='boa'?'bg':p.qualidade==='razoavel'?'ba':'br';
+    const ql=p.qualidade==='boa'?'equilibrada':p.qualidade==='razoavel'?'pode melhorar':'atenção';
+    out.innerHTML=`
+      <div class="air" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <span>${p.analise} — <strong>${p.totalKcal} kcal</strong></span>
+        <span class="badge ${qc}">${ql}</span>
+      </div>
+      <div class="clist">
+        ${p.itens.map(it=>`
+          <div class="citem">
+            <div style="flex:1;min-width:0">
+              <div class="cname">${it.nome}</div>
+              <div class="cmacro">${it.porcao} · ${it.kcal} kcal · P:${it.prot}g C:${it.carb}g G:${it.fat}g</div>
+            </div>
+            <button class="bo" onclick='addFoto(${JSON.stringify(it)},this)' style="font-size:12px;padding:6px 10px">+ Add</button>
+          </div>`).join('')}
+      </div>
+      <button class="bp" style="margin-top:10px" onclick="addAllFoto()">+ Adicionar todos</button>`;
+  }catch(e){
+    out.innerHTML=`<div class="air loading">Erro ao analisar a foto. Verifique se o deploy foi feito corretamente. (${e.message})</div>`;
+  }
+}
+
+window._pItems=[];
+function addFoto(it,btn){
+  addToMeal(it,parseInt(document.getElementById('fmsel').value),curImgUrl);
+  btn.textContent='✓';btn.className='bo cdone';btn.disabled=true;
+}
+function addAllFoto(){
+  const idx=parseInt(document.getElementById('fmsel').value);
+  window._pItems.forEach(it=>addToMeal(it,idx,curImgUrl));
+  document.querySelectorAll('#foto-out .bo').forEach(b=>{b.textContent='✓';b.className='bo cdone';b.disabled=true;});
+  const ab=document.querySelector('#foto-out .bp');
+  if(ab){ab.textContent='✓ Todos adicionados';ab.disabled=true;}
+}
+
+async function analyzeText(){
+  const desc=document.getElementById('fdesc').value.trim();
+  if(!desc)return;
+  const btn=document.getElementById('btn-analisar');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Analisando...';
+  const out=document.getElementById('texto-out');
+  out.innerHTML='<div class="air loading"><span class="spinner"></span>Analisando...</div>';
+  try{
+    const txt=await callProxy([{role:'user',content:`Nutricionista brasileiro. Usuário comeu: "${desc}". SOMENTE JSON sem markdown: {"itens":[{"nome":"alimento","porcao":"200g","kcal":220,"prot":10,"carb":30,"fat":5}],"totalKcal":220,"analise":"até 60 chars"}`}]);
+    const p=JSON.parse(txt);
+    const idx=parseInt(document.getElementById('tmsel').value);
+    out.innerHTML=`
+      <div class="air">${p.analise} — <strong>${p.totalKcal} kcal total</strong></div>
+      <div class="clist">
+        ${p.itens.map(it=>`
+          <div class="citem">
+            <div style="flex:1;min-width:0">
+              <div class="cname">${it.nome}</div>
+              <div class="cmacro">${it.porcao} · ${it.kcal} kcal · P:${it.prot}g C:${it.carb}g G:${it.fat}g</div>
+            </div>
+            <button class="bo" onclick='addTxt(${JSON.stringify(it)},${idx},this)' style="font-size:12px;padding:6px 10px">+ Add</button>
+          </div>`).join('')}
+      </div>`;
+  }catch(e){
+    out.innerHTML=`<div class="air loading">Erro ao analisar. (${e.message})</div>`;
+  }
+  btn.disabled=false;btn.textContent='Analisar com IA';
+}
+function addTxt(it,idx,btn){addToMeal(it,idx,null);btn.textContent='✓';btn.className='bo cdone';btn.disabled=true;}
+function quickAdd(t){document.getElementById('fdesc').value=t;selMethod('texto');analyzeText();}
+
+function addToMeal(it,idx,img){
+  state.kcal+=it.kcal;state.prot+=it.prot;state.carb+=it.carb;state.fat+=it.fat;
+  state.meals[idx].kcal+=it.kcal;
+  state.meals[idx].items.push({n:it.nome,p:it.porcao,k:it.kcal,img});
+  updateRing();renderMeals();save();
+}
+
+function renderMeals(){
+  document.getElementById('meals-list').innerHTML=state.meals.map(m=>`
+    <div class="meal-sec">
+      <div class="meal-hdr"><span class="meal-t">${m.name}</span><span class="meal-k">${m.kcal} kcal</span></div>
+      ${m.items.length?`<div class="meal-items">${m.items.map(i=>`
+        <div class="fitem">
+          <div class="fleft">
+            ${i.img?`<img src="${i.img}" class="fthumb" alt="${i.n}"/>`:''}
+            <div><div class="fname">${i.n}</div><div class="fportion">${i.p}</div></div>
+          </div>
+          <span class="fkcal">${i.k} kcal</span>
+        </div>`).join('')}</div>`:''}
+    </div>`).join('');
+}
+
+function updateRing(){
+  const pct=Math.min(state.kcal/state.goal,1);
+  document.getElementById('ring-fill').setAttribute('stroke-dashoffset',(213.6*(1-pct)).toFixed(1));
+  document.getElementById('kcal-num').textContent=state.kcal;
+  const p=Math.round(pct*100)+'%';
+  document.getElementById('pct').textContent=p;
+  document.getElementById('cprog').style.width=p;
+  const b=document.getElementById('cal-badge');
+  if(pct>1.05){b.className='badge br';b.textContent='acima da meta';}
+  else if(pct>0.9){b.className='badge ba';b.textContent='próximo da meta';}
+  else{b.className='badge bg';b.textContent='dentro da meta';}
+  document.getElementById('vp').textContent=state.prot+'g';
+  document.getElementById('vc').textContent=state.carb+'g';
+  document.getElementById('vf').textContent=state.fat+'g';
+  document.getElementById('bp').style.width=Math.min(state.prot/150*100,100)+'%';
+  document.getElementById('bc').style.width=Math.min(state.carb/225*100,100)+'%';
+  document.getElementById('bf').style.width=Math.min(state.fat/60*100,100)+'%';
+}
+
+function logWeight(){
+  const v=parseFloat(document.getElementById('nw').value);
+  if(!v||v<30||v>300)return;
+  state.wlog.push(v);state.wlog.shift();
+  document.getElementById('cur-w').textContent=v.toFixed(1);
+  document.getElementById('imc').textContent=(v/(1.74*1.74)).toFixed(1);
+  renderWChart();save();
+  document.getElementById('nw').value='';
+}
+
+function renderWChart(){
+  const ctx=document.getElementById('wchart').getContext('2d');
+  const lbs=Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()-13+i);return d.getDate()+'/'+(d.getMonth()+1)});
+  if(wChart)wChart.destroy();
+  wChart=new Chart(ctx,{type:'line',data:{labels:lbs,datasets:[{data:state.wlog,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1D9E75',fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.raw.toFixed(1)+' kg'}}},scales:{x:{grid:{color:'rgba(128,128,128,0.08)'},ticks:{font:{size:10},maxTicksLimit:7}},y:{grid:{color:'rgba(128,128,128,0.08)'},ticks:{font:{size:10},callback:v=>v.toFixed(1)},min:Math.min(...state.wlog)-.5,max:Math.max(...state.wlog)+.5}}}});
+}
+
+async function askIA(){
+  const q=document.getElementById('ia-q').value.trim();
+  if(!q)return;
+  quickIA(q);
+}
+async function quickIA(q){
+  document.getElementById('ia-q').value=q;
+  const out=document.getElementById('ia-resp');
+  out.innerHTML='<div class="air loading"><span class="spinner"></span>Consultando a IA...</div>';
+  try{
+    const txt=await callProxy([{role:'user',content:`Você é um nutricionista brasileiro. Responda de forma clara e prática, focado em alimentos e suplementos brasileiros: ${q}`}]);
+    out.innerHTML=`<div class="air" style="white-space:pre-wrap">${txt}</div>`;
+  }catch(e){
+    out.innerHTML=`<div class="air loading">Erro. (${e.message})</div>`;
+  }
+}
+
+const tips=[
+  {i:'💧',t:'Hidratação abaixo do ideal',s:'Você bebeu em média apenas 1.2L/dia. A meta é 2.5L.'},
+  {i:'🥩',t:'Proteína bem distribuída',s:'Consumo ideal para preservar massa muscular.'},
+  {i:'🌙',t:'Jantar mais leve pode ajudar',s:'Refeições pesadas após 20h dificultam o emagrecimento.'},
+  {i:'🥗',t:'Aumente fibras no cardápio',s:'Frutas e vegetais aumentam saciedade com menos calorias.'}
+];
+document.getElementById('tips-list').innerHTML=tips.map(t=>`
+  <div class="tipitem">
+    <div class="tipico">${t.i}</div>
+    <div><div class="tiptxt">${t.t}</div><div class="tipsub">${t.s}</div></div>
+  </div>`).join('');
+
+function save(){
+  try{localStorage.setItem('nutriai_m',JSON.stringify(state.meals));localStorage.setItem('nutriai_w',JSON.stringify(state.wlog));}catch(e){}
+}
+function load(){
+  try{
+    const m=localStorage.getItem('nutriai_m');
+    if(m){const pm=JSON.parse(m);state.meals.splice(0,4,...pm);state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);}
+    const w=localStorage.getItem('nutriai_w');
+    if(w)state.wlog.splice(0,14,...JSON.parse(w));
+  }catch(e){}
+}
+load();renderMeals();updateRing();
+</script>
+</body>
+</html>
