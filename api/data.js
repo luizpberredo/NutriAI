@@ -58,6 +58,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ days });
     }
 
+    if (action === 'saveOnboarding') {
+      await kv.set(`onboarding:${userId}`, { done: true, completedAt: new Date().toISOString() });
+      return res.status(200).json({ ok: true });
+    }
+
+    if (action === 'getOnboarding') {
+      const data = await kv.get(`onboarding:${userId}`);
+      return res.status(200).json({ onboarding: data ?? null });
+    }
+
     return res.status(400).json({ error: 'Unknown action' });
   } catch (e) {
     return res.status(500).json({ error: e.message });

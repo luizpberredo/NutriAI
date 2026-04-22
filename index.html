@@ -158,8 +158,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </head>
 <body>
 
-<!-- Profile Setup Overlay -->
-<div class="overlay" id="profile-overlay">
+<!-- Profile Setup Overlay (hidden by default — shown only when needed) -->
+<div class="overlay" id="profile-overlay" style="display:none">
   <div class="ologo">🥗</div>
   <div class="otitle">Bem-vindo ao NutriAI</div>
   <div class="osub">Configure seu perfil para personalizar<br>suas metas calóricas e nutricionais.</div>
@@ -212,7 +212,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="header">
     <div class="hrow">
       <div><h1 id="hname">NutriAI</h1><div class="hsub">Assistente nutricional inteligente</div></div>
-      <div class="hdate" id="hdate"></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="hdate" id="hdate"></div>
+        <button onclick="openEditProfile()" title="Editar perfil" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--text3);line-height:1">⚙️</button>
+      </div>
     </div>
   </div>
 
@@ -516,6 +519,9 @@ async function saveProfile(){
   profile={name,age,sex:selectedSex,height,weight,goalWeight,activity};
   try{
     await apiData({body:{action:'saveProfile',userId:UID,profile}});
+    await apiData({body:{action:'saveOnboarding',userId:'user_001'}});
+    localStorage.setItem('nutriai_onboarded','1');
+    localStorage.setItem('nutriai_profile',JSON.stringify(profile));
   }catch(e){console.warn('Save profile failed:',e);}
   btn.disabled=false;btn.textContent='Começar';
   applyProfile();
@@ -963,30 +969,65 @@ async function logWeightManual(){
 // ── Init ───────────────────────────────────────────────────────────────────
 document.getElementById('hdate').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});
 
+function showApp(){
+  document.getElementById('profile-overlay').style.display='none';
+  document.getElementById('main-app').style.display='';
+}
+function showOnboarding(){
+  document.getElementById('profile-overlay').style.display='';
+  document.getElementById('main-app').style.display='none';
+}
+
 async function init(){
+  // Layer 1: localStorage cache — instant, no flash
+  const cachedProfile=localStorage.getItem('nutriai_profile');
+  const onboarded=localStorage.getItem('nutriai_onboarded');
+  if(onboarded&&cachedProfile){
+    try{profile=JSON.parse(cachedProfile);}catch(e){}
+    if(profile){applyProfile();showApp();loadToday();}
+  }
+
+  // Layer 2: Redis onboarding flag (source of truth)
+  try{
+    const ob=await apiData({method:'GET',query:{action:'getOnboarding',userId:'user_001'}});
+    if(!ob.onboarding){
+      // Never completed onboarding — show form regardless of cache
+      showOnboarding();
+      return;
+    }
+  }catch(e){
+    console.warn('getOnboarding failed:',e);
+    // Redis unreachable: trust localStorage cache if present
+    if(!onboarded){showOnboarding();return;}
+  }
+
+  // Layer 3: load full profile from Redis and refresh app
   try{
     const d=await apiData({method:'GET',query:{action:'getProfile',userId:UID}});
     if(d.profile){
       profile=d.profile;
+      localStorage.setItem('nutriai_profile',JSON.stringify(profile));
       applyProfile();
-      document.getElementById('profile-overlay').style.display='none';
-      document.getElementById('main-app').style.display='';
+      showApp();
       await loadToday();
-      // If returning from OAuth, open integrations tab
-      const params=new URLSearchParams(location.search);
-      if(params.get('connected')||params.get('error')){
-        const navBtns=document.querySelectorAll('.nav-item');
-        document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-        document.getElementById('tab-integracoes').classList.add('active');
-        navBtns.forEach(n=>n.classList.remove('active'));
-        navBtns[3].classList.add('active');
-        loadIntegrations();
-      }
+    } else if(!onboarded){
+      showOnboarding();
+      return;
     }
-    // else: overlay stays visible for first-time setup
   }catch(e){
-    console.warn('init failed:',e);
-    // show overlay so user can set up
+    console.warn('getProfile failed:',e);
+    if(!onboarded){showOnboarding();return;}
+  }
+
+  // If returning from OAuth, open integrations tab
+  const params=new URLSearchParams(location.search);
+  if(params.get('connected')||params.get('error')){
+    const navBtns=document.querySelectorAll('.nav-item');
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.getElementById('tab-integracoes').classList.add('active');
+    navBtns.forEach(n=>n.classList.remove('active'));
+    navBtns[3].classList.add('active');
+    loadIntegrations();
   }
 }
 
