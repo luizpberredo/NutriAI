@@ -128,6 +128,27 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .radio-group{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .rbtn{display:flex;align-items:center;justify-content:center;padding:12px;border:1.5px solid var(--border2);border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:600;color:var(--text);background:var(--bg);transition:all .15s;user-select:none}
 .rbtn.sel{border-color:var(--green);background:var(--green-light);color:var(--green-dark)}
+/* Integrations */
+.int-provider{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--border)}
+.int-provider:last-child{border-bottom:none}
+.int-logo{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.int-info{flex:1;margin:0 12px}
+.int-name{font-size:14px;font-weight:700;color:var(--text)}
+.int-status{font-size:11px;color:var(--text3);margin-top:2px}
+.int-status.connected{color:var(--green)}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.metric-card{background:var(--bg2);border-radius:var(--rs);padding:14px 12px}
+.metric-icon{font-size:20px;margin-bottom:6px}
+.metric-val{font-size:22px;font-weight:800;color:var(--text);line-height:1}
+.metric-unit{font-size:11px;color:var(--text3)}
+.metric-label{font-size:11px;color:var(--text3);margin-top:4px}
+.balance-card{background:var(--bg2);border-radius:var(--rs);padding:14px;margin-bottom:12px}
+.balance-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0}
+.balance-label{color:var(--text3)}
+.balance-val{font-weight:700;color:var(--text)}
+.balance-net{font-size:16px;font-weight:800}
+.balance-net.surplus{color:var(--pink)}
+.balance-net.deficit{color:var(--green)}
 /* Profile tab */
 .pinfo-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);font-size:14px}
 .pinfo-row:last-child{border-bottom:none}
@@ -331,10 +352,91 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
+  <!-- INTEGRAÇÕES -->
+  <div class="section" id="tab-integracoes">
+    <!-- Dashboard de métricas -->
+    <div class="card" id="int-dashboard" style="display:none">
+      <div class="ctitle">Resumo de hoje</div>
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-icon">👟</div>
+          <div class="metric-val" id="int-steps">—</div>
+          <div class="metric-label">passos hoje</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">🔥</div>
+          <div class="metric-val" id="int-burned">—</div>
+          <div class="metric-unit">kcal</div>
+          <div class="metric-label">gastos (exercício)</div>
+        </div>
+      </div>
+      <div class="balance-card">
+        <div class="balance-row"><span class="balance-label">Consumidas</span><span class="balance-val" id="int-consumed">— kcal</span></div>
+        <div class="balance-row"><span class="balance-label">Gastas</span><span class="balance-val" id="int-burned2">— kcal</span></div>
+        <div style="border-top:0.5px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--text3)">Saldo</span>
+          <span class="balance-net" id="int-balance">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Último peso Withings -->
+    <div class="card" id="int-weight-card" style="display:none">
+      <div class="ctitle">Última medição — Withings</div>
+      <div id="int-weight-data"></div>
+    </div>
+
+    <!-- Provedores -->
+    <div class="card">
+      <div class="ctitle">Conectar dispositivos</div>
+      <div class="int-provider">
+        <div class="int-logo" style="background:#FC4C02">🏃</div>
+        <div class="int-info">
+          <div class="int-name">Strava</div>
+          <div class="int-status" id="strava-status">Não conectado</div>
+        </div>
+        <button class="bo" id="strava-btn" onclick="connectStrava()">Conectar</button>
+      </div>
+      <div class="int-provider">
+        <div class="int-logo" style="background:#4285F4">🏋️</div>
+        <div class="int-info">
+          <div class="int-name">Google Fit</div>
+          <div class="int-status" id="google-status">Não conectado</div>
+        </div>
+        <button class="bo" id="google-btn" onclick="connectGoogle()">Conectar</button>
+      </div>
+      <div class="int-provider">
+        <div class="int-logo" style="background:#00B5AD">⚖️</div>
+        <div class="int-info">
+          <div class="int-name">Withings</div>
+          <div class="int-status" id="withings-status">Não conectado</div>
+        </div>
+        <button class="bo" id="withings-btn" onclick="connectWithings()">Conectar</button>
+      </div>
+    </div>
+
+    <!-- Atividades Strava -->
+    <div class="card" id="strava-activities-card" style="display:none">
+      <div class="ctitle">Atividades — últimos 7 dias</div>
+      <div id="strava-activities-list"></div>
+    </div>
+
+    <!-- Peso manual -->
+    <div class="card">
+      <div class="ctitle">Registrar peso manualmente</div>
+      <div class="csub">Para quem não tem Withings</div>
+      <div class="wrow">
+        <input type="number" id="int-weight-input" placeholder="Ex: 72.0" step="0.1" min="30" max="300"/>
+        <button class="bo" onclick="logWeightManual()" style="padding:12px 20px">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <nav class="bottom-nav">
     <button class="nav-item active" onclick="goTab('hoje',this)"><span class="nav-icon">🏠</span><span class="nav-label">Hoje</span></button>
     <button class="nav-item" onclick="goTab('registrar',this)"><span class="nav-icon">➕</span><span class="nav-label">Registrar</span></button>
     <button class="nav-item" onclick="goTab('historico',this)"><span class="nav-icon">📅</span><span class="nav-label">Histórico</span></button>
+    <button class="nav-item" onclick="goTab('integracoes',this)"><span class="nav-icon">📊</span><span class="nav-label">Conectar</span></button>
     <button class="nav-item" onclick="goTab('perfil',this)"><span class="nav-icon">👤</span><span class="nav-label">Perfil</span></button>
   </nav>
 </div>
@@ -505,6 +607,7 @@ function goTab(t,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
   if(t==='historico')loadHistory();
+  if(t==='integracoes')loadIntegrations();
   if(t==='perfil')setTimeout(renderWChart,60);
 }
 
@@ -759,6 +862,104 @@ function toggleHist(id){
   if(el)el.classList.toggle('open');
 }
 
+// ── Integrations ──────────────────────────────────────────────────────────
+function connectStrava(){ window.location.href='/api/auth-strava'; }
+function connectGoogle(){ window.location.href='/api/auth-google'; }
+function connectWithings(){ window.location.href='/api/auth-withings'; }
+
+async function loadIntegrations(){
+  // Check URL params for just-connected provider
+  const params=new URLSearchParams(location.search);
+  const connected=params.get('connected');
+  const error=params.get('error');
+  if(connected||error){ history.replaceState({},'','/'); }
+
+  // Load activities + Fit data
+  try{
+    const r=await fetch('/api/fetch-activities');
+    const d=await r.json();
+
+    // Strava
+    if(d.strava){
+      document.getElementById('strava-status').textContent='Conectado ✓';
+      document.getElementById('strava-status').className='int-status connected';
+      document.getElementById('strava-btn').textContent='Reconectar';
+      const card=document.getElementById('strava-activities-card');
+      card.style.display='';
+      const list=document.getElementById('strava-activities-list');
+      if(d.strava.length===0){
+        list.innerHTML='<div class="empty-state" style="padding:16px 0"><div class="empty-txt">Nenhuma atividade nos últimos 7 dias</div></div>';
+      } else {
+        list.innerHTML=d.strava.map(a=>`
+          <div class="fitem">
+            <div><div class="fname">${a.name}</div><div class="fportion">${a.type} · ${a.date} · ${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div></div>
+            <span class="fkcal">${a.calories?a.calories+' kcal':'—'}</span>
+          </div>`).join('');
+      }
+    } else if(d.errors?.strava==='not_connected'){
+      document.getElementById('strava-status').textContent='Não conectado';
+    } else if(d.errors?.strava){
+      document.getElementById('strava-status').textContent='Erro: '+d.errors.strava;
+    }
+
+    // Google Fit
+    if(d.google){
+      document.getElementById('google-status').textContent='Conectado ✓';
+      document.getElementById('google-status').className='int-status connected';
+      document.getElementById('google-btn').textContent='Reconectar';
+      document.getElementById('int-steps').textContent=d.google.steps.toLocaleString('pt-BR');
+      document.getElementById('int-burned').textContent=d.google.calories_burned;
+      document.getElementById('int-burned2').textContent=d.google.calories_burned+' kcal';
+      const consumed=state.kcal;
+      document.getElementById('int-consumed').textContent=consumed+' kcal';
+      const balance=consumed-d.google.calories_burned;
+      const balEl=document.getElementById('int-balance');
+      balEl.textContent=(balance>0?'+':'')+balance+' kcal';
+      balEl.className='balance-net '+(balance>0?'surplus':'deficit');
+      document.getElementById('int-dashboard').style.display='';
+    } else if(d.errors?.google==='not_connected'){
+      document.getElementById('google-status').textContent='Não conectado';
+    } else if(d.errors?.google){
+      document.getElementById('google-status').textContent='Erro: '+d.errors.google;
+    }
+  }catch(e){
+    console.warn('loadIntegrations activities error:',e);
+  }
+
+  // Withings weight
+  try{
+    const r=await fetch('/api/fetch-weight');
+    const d=await r.json();
+    if(d.error==='not_connected'){
+      document.getElementById('withings-status').textContent='Não conectado';
+    } else if(d.measurements?.length){
+      document.getElementById('withings-status').textContent='Conectado ✓';
+      document.getElementById('withings-status').className='int-status connected';
+      document.getElementById('withings-btn').textContent='Reconectar';
+      const latest=d.measurements[d.measurements.length-1];
+      document.getElementById('int-weight-card').style.display='';
+      document.getElementById('int-weight-data').innerHTML=`
+        <div class="sgrid" style="margin-bottom:0">
+          <div class="sc"><div class="slbl">Peso</div><div><span class="sval">${latest.weight_kg}</span><span class="sunit"> kg</span></div></div>
+          ${latest.fat_pct!=null?`<div class="sc"><div class="slbl">Gordura</div><div><span class="sval">${latest.fat_pct}</span><span class="sunit">%</span></div></div>`:''}
+          ${latest.fat_free_mass_kg!=null?`<div class="sc"><div class="slbl">Massa magra</div><div><span class="sval">${latest.fat_free_mass_kg}</span><span class="sunit"> kg</span></div></div>`:''}
+          <div class="sc"><div class="slbl">Data</div><div style="font-size:14px;font-weight:700;color:var(--text)">${latest.date}</div></div>
+        </div>`;
+    }
+  }catch(e){
+    console.warn('loadIntegrations weight error:',e);
+  }
+}
+
+async function logWeightManual(){
+  const v=parseFloat(document.getElementById('int-weight-input').value);
+  if(!v||v<30||v>300)return;
+  state.weight=v;
+  await saveDay();
+  document.getElementById('int-weight-input').value='';
+  document.getElementById('nw').value='';
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────
 document.getElementById('hdate').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});
 
@@ -771,6 +972,16 @@ async function init(){
       document.getElementById('profile-overlay').style.display='none';
       document.getElementById('main-app').style.display='';
       await loadToday();
+      // If returning from OAuth, open integrations tab
+      const params=new URLSearchParams(location.search);
+      if(params.get('connected')||params.get('error')){
+        const navBtns=document.querySelectorAll('.nav-item');
+        document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+        document.getElementById('tab-integracoes').classList.add('active');
+        navBtns.forEach(n=>n.classList.remove('active'));
+        navBtns[3].classList.add('active');
+        loadIntegrations();
+      }
     }
     // else: overlay stays visible for first-time setup
   }catch(e){
