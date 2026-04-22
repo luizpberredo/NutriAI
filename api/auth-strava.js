@@ -1,5 +1,6 @@
 export default function handler(req, res) {
   const clientId = process.env.STRAVA_CLIENT_ID;
+  console.log('[auth-strava] STRAVA_CLIENT_ID:', clientId ? `set (${clientId.length} chars)` : 'UNDEFINED');
   const host = req.headers.host;
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const redirectUri = `${protocol}://${host}/api/auth-strava-callback`;
