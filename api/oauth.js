@@ -40,13 +40,17 @@ export default async function handler(req, res) {
   // ── START flows (redirect to provider) ───────────────────────────────────
   if (action === 'start') {
     const sessionToken = req.query.token || '';
-    const callbackUrl = `${baseUrl(req)}/api/oauth?provider=${provider}&action=callback`;
+    const base = baseUrl(req);
+    // Strava só aceita domínio no "Authorization Callback Domain", então usa
+    // rota dedicada /api/strava-callback (sem query params na URL registrada).
+    const stravaCallbackUrl = `${base}/api/strava-callback`;
+    const callbackUrl = `${base}/api/oauth?provider=${provider}&action=callback`;
     const oauthState = `nutriai|${sessionToken}`;
 
     if (provider === 'strava') {
       const url = new URL('https://www.strava.com/oauth/authorize');
       url.searchParams.set('client_id', process.env.STRAVA_CLIENT_ID);
-      url.searchParams.set('redirect_uri', callbackUrl);
+      url.searchParams.set('redirect_uri', stravaCallbackUrl);
       url.searchParams.set('response_type', 'code');
       url.searchParams.set('approval_prompt', 'auto');
       url.searchParams.set('scope', 'activity:read_all');
@@ -85,7 +89,10 @@ export default async function handler(req, res) {
   // ── CALLBACK flows (exchange code for tokens) ─────────────────────────────
   if (action === 'callback') {
     const [, sessionToken] = (state || '').split('|');
-    const callbackUrl = `${baseUrl(req)}/api/oauth?provider=${provider}&action=callback`;
+    const base = baseUrl(req);
+    // Strava: redirect_uri no token exchange deve ser idêntico ao registrado no app
+    const stravaCallbackUrl = `${base}/api/strava-callback`;
+    const callbackUrl = `${base}/api/oauth?provider=${provider}&action=callback`;
 
     if (error || !code) return res.redirect(302, `/?error=${provider}_denied`);
 
