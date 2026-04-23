@@ -1,11 +1,20 @@
 import { Redis } from '@upstash/redis';
-import bcrypt from 'bcryptjs';
+import { randomBytes, pbkdf2 } from 'node:crypto';
+import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
+
+const pbkdf2Async = promisify(pbkdf2);
 
 const kv = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
 });
+
+async function hashPassword(password) {
+  const salt = randomBytes(16).toString('hex');
+  const buf = await pbkdf2Async(password, salt, 100000, 64, 'sha512');
+  return `pbkdf2:${salt}:${buf.toString('hex')}`;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,7 +37,7 @@ export default async function handler(req, res) {
     const existing = await kv.get(emailKey);
     if (existing) return res.status(409).json({ error: 'E-mail já cadastrado' });
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await hashPassword(password);
     const userId = randomUUID();
     const user = {
       id: userId,

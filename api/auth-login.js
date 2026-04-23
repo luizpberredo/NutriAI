@@ -1,11 +1,20 @@
 import { Redis } from '@upstash/redis';
-import bcrypt from 'bcryptjs';
+import { pbkdf2 } from 'node:crypto';
+import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
+
+const pbkdf2Async = promisify(pbkdf2);
 
 const kv = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
 });
+
+async function verifyPassword(password, stored) {
+  const [, salt, hash] = stored.split(':');
+  const buf = await pbkdf2Async(password, salt, 100000, 64, 'sha512');
+  return buf.toString('hex') === hash;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,7 +32,7 @@ export default async function handler(req, res) {
     const user = await kv.get(`user:email:${email.toLowerCase().trim()}`);
     if (!user) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
 
     const token = randomUUID();
