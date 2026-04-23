@@ -4,350 +4,666 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="NutriAI"/>
 <link rel="apple-touch-icon" href="/icon.svg"/>
 <title>NutriAI</title>
 <style>
-:root{--green:#1D9E75;--green-light:#E1F5EE;--green-dark:#0F6E56;--amber:#BA7517;--pink:#D4537E;--bg:#ffffff;--bg2:#f5f5f3;--bg3:#eeede8;--text:#1a1a18;--text2:#5f5e5a;--text3:#888780;--border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);--r:12px;--rs:8px;--sbg:#E1F5EE;--stxt:#0F6E56;--wbg:#FAEEDA;--wtxt:#633806;--dbg:#FCEBEB;--dtxt:#791F1F;--ibg:#E6F1FB;--itxt:#0C447C}
-@media(prefers-color-scheme:dark){:root{--bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;--text:#f0efe8;--text2:#b4b2a9;--text3:#888780;--border:rgba(255,255,255,0.12);--border2:rgba(255,255,255,0.22);--green-light:#04342C;--sbg:#085041;--stxt:#9FE1CB;--wbg:#633806;--wtxt:#FAC775;--dbg:#501313;--dtxt:#F7C1C1;--ibg:#042C53;--itxt:#B5D4F4}}
+/* ── Variables ───────────────────────────────────────────────────────────── */
+:root{
+  --ink:#0B1D1A;--card:#0F2822;--card2:#162F28;
+  --border:#1A3830;--border2:#243D35;
+  --text:#FFFFFF;--text2:#6B9E94;--text3:#3D6B5E;
+  --mint:#6FD6B8;--mint-dim:rgba(111,214,184,0.12);--mint-glow:rgba(111,214,184,0.35);
+  --coral:#FF5E5B;--coral-dim:rgba(255,94,91,0.15);
+  --gold:#F4C26B;--gold-dim:rgba(244,194,107,0.15);
+  --r:16px;--rs:12px;
+}
+/* ── Reset ───────────────────────────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;padding-bottom:84px}
-.app{max-width:430px;margin:0 auto}
-.header{background:var(--bg);border-bottom:0.5px solid var(--border);padding:16px 20px 12px;position:sticky;top:0;z-index:10}
-.hrow{display:flex;align-items:center;justify-content:space-between}
-.header h1{font-size:20px;font-weight:700;color:var(--text)}
-.hsub{font-size:12px;color:var(--text3);margin-top:2px}
-.hdate{font-size:12px;color:var(--text3);background:var(--bg2);padding:4px 10px;border-radius:20px;border:0.5px solid var(--border)}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:0.5px solid var(--border);display:flex;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;cursor:pointer;border:none;background:none;color:var(--text3);font-family:inherit;transition:color .15s}
-.nav-item.active{color:var(--green)}
-.nav-icon{font-size:20px;line-height:1}
-.nav-label{font-size:10px;font-weight:500}
-.section{display:none;padding:16px}
+html,body{height:100%;background:var(--ink)}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);min-height:100vh;padding-bottom:88px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit}
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.app{max-width:430px;margin:0 auto;min-height:100vh}
+.section{display:none;padding:16px 16px 8px}
 .section.active{display:block}
-.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
-.ctitle{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px}
-.csub{font-size:12px;color:var(--text3);margin-bottom:12px;margin-top:-8px}
-.ring-wrap{display:flex;align-items:center;gap:20px}
-.ring-chart{position:relative;width:88px;height:88px;flex-shrink:0}
-.ring-chart svg{transform:rotate(-90deg)}
-.ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
-.ring-kcal{font-size:18px;font-weight:700;color:var(--text);line-height:1}
-.ring-lbl{font-size:10px;color:var(--text3);margin-top:2px}
-.macros{flex:1;display:flex;flex-direction:column;gap:8px}
-.mrow{display:flex;align-items:center;gap:8px}
-.mdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.mname{font-size:11px;color:var(--text3);width:46px}
-.mbar-bg{flex:1;height:4px;background:var(--bg2);border-radius:2px;overflow:hidden}
-.mbar{height:100%;border-radius:2px;transition:width .4s}
-.mval{font-size:11px;color:var(--text);min-width:30px;text-align:right}
-.prow{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:4px;margin-top:14px}
-.pbar{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden}
-.pfill{height:100%;border-radius:3px;transition:width .5s}
-.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
-.bg{background:var(--sbg);color:var(--stxt)}
-.ba{background:var(--wbg);color:var(--wtxt)}
-.br{background:var(--dbg);color:var(--dtxt)}
-.meal-sec{margin-bottom:2px}
-.meal-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 0 6px}
-.meal-t{font-size:14px;font-weight:700;color:var(--text)}
-.meal-k{font-size:12px;color:var(--text3)}
-.meal-items{border-top:0.5px solid var(--border)}
-.fitem{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)}
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.header{
+  background:var(--ink);padding:20px 20px 14px;
+  position:sticky;top:0;z-index:20;
+  border-bottom:1px solid var(--border);
+}
+.hrow{display:flex;align-items:flex-start;justify-content:space-between}
+.hgreeting{font-size:22px;font-weight:700;color:var(--text);line-height:1.1}
+.hdate-pill{
+  font-size:12px;font-weight:500;color:var(--text2);
+  background:var(--card);border:1px solid var(--border);
+  padding:6px 12px;border-radius:20px;white-space:nowrap;margin-top:2px
+}
+.hactions{display:flex;align-items:center;gap:4px;margin-top:2px}
+.hbtn{background:none;border:none;cursor:pointer;padding:7px;border-radius:10px;
+  color:var(--text2);font-size:17px;line-height:1;transition:background .15s}
+.hbtn:active{background:var(--card)}
+/* ── Bottom nav ──────────────────────────────────────────────────────────── */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--card);border-top:1px solid var(--border);
+  display:flex;align-items:center;z-index:20;
+  padding-bottom:env(safe-area-inset-bottom);
+  overflow:visible;
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:12px 0 10px;cursor:pointer;border:none;background:none;
+  color:var(--text2);font-family:inherit;transition:color .15s;font-size:9px;font-weight:500;letter-spacing:.02em;text-transform:uppercase
+}
+.nav-item.active{color:var(--mint)}
+.nav-icon{font-size:19px;line-height:1}
+.nav-item.nav-fab{padding:0;position:relative;top:-14px;flex:none;width:62px}
+.nav-fab-btn{
+  width:58px;height:58px;border-radius:50%;background:var(--mint);
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px var(--mint-glow);transition:transform .15s,box-shadow .15s
+}
+.nav-fab-btn:active{transform:scale(.93);box-shadow:0 2px 10px var(--mint-glow)}
+.nav-fab-btn svg{width:24px;height:24px}
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px}
+.card2{background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);padding:14px;margin-bottom:10px}
+.ctitle{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+/* ── Ring / Calories ─────────────────────────────────────────────────────── */
+.ring-section{display:flex;flex-direction:column;align-items:center;padding:8px 0 16px}
+.ring-wrap{position:relative;width:150px;height:150px}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-kcal{font-size:38px;font-weight:700;color:var(--text);line-height:1}
+.ring-lbl{font-size:12px;color:var(--text2);margin-top:2px;font-weight:300}
+.ring-goal{font-size:13px;color:var(--text2);margin-top:10px;font-weight:400}
+/* ── Macro row ───────────────────────────────────────────────────────────── */
+.macro-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.macro-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 10px;text-align:center}
+.macro-val{font-size:18px;font-weight:700;color:var(--text);line-height:1;margin-bottom:6px}
+.macro-bar-bg{height:3px;background:var(--border2);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.macro-bar{height:100%;border-radius:2px;transition:width .4s;width:0%}
+.macro-bar.mint{background:var(--mint)}
+.macro-bar.gold{background:var(--gold)}
+.macro-bar.coral{background:var(--coral)}
+.macro-name{font-size:10px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+/* ── Cal badge ───────────────────────────────────────────────────────────── */
+.cal-status{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;margin-top:6px
+}
+.cal-ok{background:var(--mint-dim);color:var(--mint)}
+.cal-warn{background:var(--gold-dim);color:var(--gold)}
+.cal-over{background:var(--coral-dim);color:var(--coral)}
+/* ── Meal list ───────────────────────────────────────────────────────────── */
+.meal-sec{margin-bottom:4px}
+.meal-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 0 8px}
+.meal-t{font-size:14px;font-weight:600;color:var(--text)}
+.meal-k{font-size:13px;color:var(--text2)}
+.meal-items{border-top:1px solid var(--border)}
+.fitem{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
 .fitem:last-child{border-bottom:none}
 .fleft{display:flex;align-items:center;gap:10px}
-.fthumb{width:42px;height:42px;border-radius:8px;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0}
-.fname{font-size:13px;color:var(--text)}
-.fportion{font-size:11px;color:var(--text3);margin-top:1px}
-.fkcal{font-size:12px;color:var(--text2);white-space:nowrap}
-.empty-state{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 0;color:var(--text3)}
-.empty-icon{font-size:32px}
-.empty-txt{font-size:13px;font-weight:600;color:var(--text2)}
-.empty-sub{font-size:12px;text-align:center;line-height:1.4}
-.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.sc{background:var(--bg2);border-radius:var(--rs);padding:12px}
-.slbl{font-size:11px;color:var(--text3);margin-bottom:4px}
-.sval{font-size:22px;font-weight:700;color:var(--text)}
-.sunit{font-size:12px;color:var(--text3)}
-.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.mbtn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 8px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);cursor:pointer;font-family:inherit;transition:all .15s}
-.mbtn.sel{border:2px solid var(--green);background:var(--green-light)}
-.mico{font-size:26px}
-.mlbl{font-size:14px;font-weight:700;color:var(--text)}
-.msub{font-size:11px;color:var(--text3);text-align:center;line-height:1.3}
-.pdrop{border:1.5px dashed var(--border2);border-radius:var(--r);padding:32px 16px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:12px}
-.pdrop:active{background:var(--bg2)}
-.pdrop.hasimg{padding:0;border-style:solid;overflow:hidden}
-.ppreview{width:100%;max-height:260px;object-fit:cover;border-radius:10px;display:block}
-.chgphoto{display:block;text-align:center;font-size:12px;color:var(--green);padding:8px;cursor:pointer;border-top:0.5px solid var(--border)}
-.dico{font-size:36px;margin-bottom:10px}
-.dtitle{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
-.dsub{font-size:12px;color:var(--text3)}
-input[type=text],input[type=number],input[type=email],input[type=password],textarea,select{width:100%;padding:12px 14px;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:15px;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;outline:none;transition:border-color .15s}
-input:focus,textarea:focus,select:focus{border-color:var(--green)}
-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
-.bp{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
-.bp:active{opacity:.8}
-.bp:disabled{opacity:.45;cursor:not-allowed}
-.bo{padding:8px 14px;background:transparent;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:13px;color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
-.bo:active{background:var(--bg2)}
-.bd{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:transparent;border:0.5px dashed var(--border2);border-radius:var(--rs);font-size:13px;color:var(--text3);cursor:pointer;font-family:inherit;margin-top:6px}
-.air{background:var(--bg2);border-radius:var(--rs);padding:12px 14px;margin-bottom:10px;font-size:13px;color:var(--text);line-height:1.5}
-.air.loading{color:var(--text3);font-style:italic}
-.clist{display:flex;flex-direction:column;gap:8px}
-.citem{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rs);padding:10px 12px}
-.cname{font-size:13px;font-weight:700;color:var(--text)}
-.cmacro{font-size:11px;color:var(--text3);margin-top:2px}
-.cdone{background:var(--sbg)!important;color:var(--stxt)!important;border-color:transparent!important}
+.fthumb{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex-shrink:0}
+.fname{font-size:13px;color:var(--text);font-weight:500}
+.fportion{font-size:11px;color:var(--text2);margin-top:2px}
+.fkcal{font-size:13px;color:var(--text2);font-weight:500;white-space:nowrap}
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:8px;padding:32px 0;color:var(--text2)}
+.empty-icon{font-size:36px;opacity:.5}
+.empty-txt{font-size:14px;font-weight:600;color:var(--text2)}
+.empty-sub{font-size:12px;text-align:center;line-height:1.5;color:var(--text3);max-width:220px}
+/* ── Camera / Register tab ───────────────────────────────────────────────── */
+.camera-zone{
+  position:relative;height:220px;background:var(--card2);border-radius:var(--r);
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;border:1px solid var(--border);margin-bottom:12px
+}
+.camera-zone.hasimg{padding:0;border-style:solid}
+.camera-guide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.camera-ring{width:70px;height:70px;border-radius:50%;border:2px solid rgba(111,214,184,.45);display:flex;align-items:center;justify-content:center}
+.camera-ring svg{width:32px;height:32px;opacity:.7}
+.camera-label{font-size:14px;font-weight:500;color:var(--text2)}
+.camera-hint{font-size:11px;color:var(--text3)}
+.ppreview{width:100%;height:100%;object-fit:cover;display:block}
+.chgphoto{position:absolute;bottom:0;left:0;right:0;background:rgba(11,29,26,.75);text-align:center;font-size:12px;font-weight:500;color:var(--mint);padding:8px;cursor:pointer;backdrop-filter:blur(4px)}
+.analysis-sheet{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;margin-top:0;transition:all .3s
+}
+.method-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.mbtn{
+  display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 12px;
+  background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);
+  cursor:pointer;font-family:inherit;transition:all .15s;font-weight:500;color:var(--text2)
+}
+.mbtn.sel{border-color:var(--mint);background:var(--mint-dim);color:var(--mint)}
+.mbtn .mico{font-size:28px}
+.mbtn .mlbl{font-size:14px;font-weight:600}
+.mbtn .msub{font-size:10px;text-align:center;line-height:1.4;color:var(--text2)}
+.mbtn.sel .msub{color:var(--mint);opacity:.8}
+/* Quick tags */
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.tag{padding:7px 12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:20px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap}
-.tag:active{background:var(--green-light);color:var(--green-dark)}
-.wrow{display:flex;gap:8px;margin-bottom:10px}
-.wrow input{flex:1}
-.chart-wrap{position:relative;height:150px}
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
-.spinner.dark{border-color:rgba(0,0,0,0.15);border-top-color:var(--green)}
-@keyframes spin{to{transform:rotate(360deg)}}
-/* History */
-.hist-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--border);cursor:pointer}
+.tag{
+  padding:7px 13px;background:var(--card2);border:1px solid var(--border);
+  border-radius:20px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap;
+  transition:all .15s
+}
+.tag:active{border-color:var(--mint);color:var(--mint);background:var(--mint-dim)}
+/* ── History ─────────────────────────────────────────────────────────────── */
+.hist-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer
+}
 .hist-item:last-child{border-bottom:none}
-.hist-date{font-size:13px;font-weight:700;color:var(--text)}
-.hist-sub{font-size:11px;color:var(--text3);margin-top:2px}
-.hist-kcal{font-size:14px;font-weight:700;color:var(--green)}
-.hist-detail{display:none;padding:12px 0 4px;border-bottom:0.5px solid var(--border)}
+.hist-date{font-size:14px;font-weight:600;color:var(--text)}
+.hist-sub{font-size:11px;color:var(--text2);margin-top:3px}
+.hist-kcal{font-size:15px;font-weight:700;color:var(--mint)}
+.hist-detail{display:none;padding:12px 0 4px;border-bottom:1px solid var(--border)}
 .hist-detail.open{display:block}
-/* Integrations */
-.int-provider{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--border)}
-.int-provider:last-child{border-bottom:none}
-.int-logo{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.int-info{flex:1;margin:0 12px}
-.int-name{font-size:14px;font-weight:700;color:var(--text)}
-.int-status{font-size:11px;color:var(--text3);margin-top:2px}
-.int-status.connected{color:var(--green)}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.sc{background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);padding:14px}
+.slbl{font-size:11px;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+.sval{font-size:24px;font-weight:700;color:var(--text);line-height:1}
+.sunit{font-size:12px;color:var(--text2)}
+/* ── Integrations ────────────────────────────────────────────────────────── */
+.provider-card{
+  display:flex;align-items:center;gap:14px;
+  background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);
+  padding:16px;margin-bottom:10px
+}
+.provider-logo{
+  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-size:22px;flex-shrink:0
+}
+.provider-info{flex:1}
+.provider-name{font-size:15px;font-weight:600;color:var(--text)}
+.provider-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.int-status{font-size:12px;color:var(--text2);margin-top:2px}
+.int-status.connected{color:var(--mint)}
+.badge-connected{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--mint-dim);color:var(--mint);
+  padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600
+}
 .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.metric-card{background:var(--bg2);border-radius:var(--rs);padding:14px 12px}
+.metric-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);padding:14px 12px}
 .metric-icon{font-size:20px;margin-bottom:6px}
-.metric-val{font-size:22px;font-weight:800;color:var(--text);line-height:1}
-.metric-unit{font-size:11px;color:var(--text3)}
-.metric-label{font-size:11px;color:var(--text3);margin-top:4px}
-.balance-card{background:var(--bg2);border-radius:var(--rs);padding:14px;margin-bottom:12px}
-.balance-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0}
-.balance-label{color:var(--text3)}
-.balance-val{font-weight:700;color:var(--text)}
-.balance-net{font-size:16px;font-weight:800}
-.balance-net.surplus{color:var(--pink)}
-.balance-net.deficit{color:var(--green)}
-/* Overlays */
-.overlay{position:fixed;inset:0;background:var(--bg);z-index:100;overflow-y:auto;padding:32px 20px 48px;display:flex;flex-direction:column;align-items:stretch;max-width:430px;margin:0 auto}
-.ologo{font-size:52px;text-align:center;margin-bottom:10px}
-.otitle{font-size:24px;font-weight:800;color:var(--text);text-align:center;margin-bottom:6px}
-.osub{font-size:14px;color:var(--text3);text-align:center;margin-bottom:28px;line-height:1.5}
-.flabel{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
-.fgroup{margin-bottom:14px}
-.srow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.radio-group{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.rbtn{display:flex;align-items:center;justify-content:center;padding:12px;border:1.5px solid var(--border2);border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:600;color:var(--text);background:var(--bg);transition:all .15s;user-select:none}
-.rbtn.sel{border-color:var(--green);background:var(--green-light);color:var(--green-dark)}
-/* Auth tabs */
-.auth-tabs{display:grid;grid-template-columns:1fr 1fr;border:0.5px solid var(--border2);border-radius:var(--rs);overflow:hidden;margin-bottom:24px}
-.auth-tab{padding:11px;background:var(--bg2);border:none;font-size:14px;font-weight:600;color:var(--text3);cursor:pointer;font-family:inherit;transition:all .15s}
-.auth-tab.sel{background:var(--green);color:#fff}
-.auth-err{color:var(--dtxt);font-size:13px;margin-bottom:10px;padding:8px 10px;background:var(--dbg);border-radius:var(--rs);display:none}
-/* Profile tab */
-.pinfo-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);font-size:14px}
+.metric-val{font-size:24px;font-weight:800;color:var(--text);line-height:1}
+.metric-unit{font-size:11px;color:var(--text2)}
+.metric-label{font-size:11px;color:var(--text2);margin-top:4px}
+.balance-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);padding:16px;margin-bottom:12px}
+.balance-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
+.balance-label{font-size:13px;color:var(--text2)}
+.balance-val{font-size:14px;font-weight:600;color:var(--text)}
+.balance-net{font-size:18px;font-weight:800}
+.balance-net.surplus{color:var(--coral)}
+.balance-net.deficit{color:var(--mint)}
+.balance-divider{border:none;border-top:1px solid var(--border);margin:8px 0}
+/* ── Profile ─────────────────────────────────────────────────────────────── */
+.pinfo-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
 .pinfo-row:last-child{border-bottom:none}
-.pinfo-label{color:var(--text3)}
-.pinfo-val{font-weight:600;color:var(--text)}
+.pinfo-label{font-size:13px;color:var(--text2)}
+.pinfo-val{font-size:14px;font-weight:600;color:var(--text)}
+.chart-wrap{position:relative;height:160px}
+.wrow{display:flex;gap:8px}
+.wrow input{flex:1}
+/* ── AI result box ───────────────────────────────────────────────────────── */
+.air{background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;margin-bottom:10px;font-size:13px;color:var(--text);line-height:1.5}
+.air.loading{color:var(--text2);font-style:italic}
+.clist{display:flex;flex-direction:column;gap:8px}
+.citem{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--card2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px
+}
+.cname{font-size:13px;font-weight:600;color:var(--text)}
+.cmacro{font-size:11px;color:var(--text2);margin-top:2px}
+.cdone{background:var(--mint-dim)!important;color:var(--mint)!important;border-color:transparent!important}
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.bg{background:var(--mint-dim);color:var(--mint)}
+.ba{background:var(--gold-dim);color:var(--gold)}
+.br{background:var(--coral-dim);color:var(--coral)}
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.bp{
+  width:100%;padding:15px;background:var(--mint);color:#0B1D1A;
+  border:none;border-radius:var(--rs);font-size:15px;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:opacity .15s
+}
+.bp:active{opacity:.85}
+.bp:disabled{opacity:.45;cursor:not-allowed}
+.bo{
+  padding:9px 16px;background:transparent;border:1px solid var(--border2);
+  border-radius:var(--rs);font-size:13px;color:var(--text);cursor:pointer;
+  font-family:inherit;transition:all .15s;white-space:nowrap
+}
+.bo:active{border-color:var(--mint);color:var(--mint)}
+.bo-mint{padding:9px 16px;background:transparent;border:1.5px solid var(--mint);
+  border-radius:var(--rs);font-size:13px;font-weight:600;color:var(--mint);cursor:pointer;font-family:inherit}
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+input[type=text],input[type=number],input[type=email],input[type=password],textarea,select{
+  width:100%;padding:14px 16px;border:none;border-radius:var(--rs);
+  font-size:15px;background:#142620;color:var(--text);
+  font-family:inherit;-webkit-appearance:none;appearance:none;outline:none;
+  transition:box-shadow .15s;
+}
+input::placeholder,textarea::placeholder{color:#4A6B60}
+input:focus,textarea:focus,select:focus{box-shadow:0 0 0 2px var(--mint)}
+select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B9E94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;background-color:#142620;padding-right:40px;cursor:pointer
+}
+select option{background:#142620}
+textarea{resize:none}
+.fgroup{margin-bottom:14px}
+.flabel{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px;display:block;text-transform:uppercase;letter-spacing:.05em}
+.srow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* ── Auth overlay ────────────────────────────────────────────────────────── */
+.overlay{
+  position:fixed;inset:0;background:var(--ink);z-index:100;overflow-y:auto;
+  display:flex;flex-direction:column;align-items:stretch;
+  max-width:430px;margin:0 auto;
+}
+.auth-body{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:32px 28px 48px;min-height:100vh
+}
+.auth-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
+.auth-logo-icon{
+  width:44px;height:44px;background:var(--mint-dim);border-radius:14px;
+  display:flex;align-items:center;justify-content:center
+}
+.auth-logo-icon svg{width:24px;height:24px}
+.auth-logo-text{font-size:26px;font-weight:700;color:var(--text)}
+.auth-tagline{font-size:28px;font-weight:700;color:var(--text);text-align:center;line-height:1.25;margin-bottom:6px;margin-top:4px}
+.auth-tagline span{color:var(--mint)}
+.auth-sub{font-size:14px;color:var(--text2);text-align:center;margin-bottom:36px;font-weight:300}
+.auth-form-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center}
+.auth-err{color:var(--coral);font-size:13px;margin-bottom:12px;padding:10px 12px;background:var(--coral-dim);border-radius:var(--rs);display:none;border:1px solid rgba(255,94,91,.2)}
+.auth-switch{text-align:center;font-size:13px;color:var(--text2);margin-top:18px}
+.auth-switch a{color:var(--mint);font-weight:600;text-decoration:none;cursor:pointer}
+/* ── Onboarding overlay ──────────────────────────────────────────────────── */
+.ob-overlay{
+  position:fixed;inset:0;background:var(--ink);z-index:100;
+  display:flex;flex-direction:column;max-width:430px;margin:0 auto;overflow:hidden
+}
+.ob-progress-bar{height:3px;background:var(--border);position:relative;flex-shrink:0}
+.ob-progress-fill{height:100%;background:var(--mint);border-radius:2px;transition:width .35s cubic-bezier(.4,0,.2,1)}
+.ob-header{display:flex;align-items:center;padding:16px 20px;flex-shrink:0}
+.ob-back-btn{
+  background:none;border:none;cursor:pointer;color:var(--text2);
+  font-size:14px;font-weight:500;padding:6px 0;display:flex;align-items:center;gap:4px
+}
+.ob-back-btn:hover{color:var(--text)}
+.ob-step-counter{flex:1;text-align:center;font-size:12px;color:var(--text2);font-weight:500}
+.ob-body{flex:1;padding:20px 28px 32px;overflow-y:auto;display:flex;flex-direction:column}
+.ob-step{flex:1;display:none;flex-direction:column}
+.ob-step.active{display:flex}
+.ob-question{font-size:26px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:8px}
+.ob-hint{font-size:14px;color:var(--text2);margin-bottom:28px;font-weight:300}
+.ob-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:auto}
+.ob-card{
+  display:flex;align-items:center;gap:14px;padding:18px;
+  background:var(--card);border:2px solid var(--border);border-radius:var(--r);
+  cursor:pointer;transition:all .15s;user-select:none
+}
+.ob-card.sel{border-color:var(--mint);background:var(--mint-dim)}
+.ob-card-icon{font-size:24px;flex-shrink:0}
+.ob-card-text{font-size:15px;font-weight:600;color:var(--text)}
+.ob-card-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.ob-card.sel .ob-card-sub{color:var(--mint);opacity:.8}
+.ob-input-lg{
+  padding:16px 18px;border:none;background:#142620;color:var(--text);
+  font-size:22px;font-weight:600;border-radius:var(--r);text-align:center;
+  width:100%;outline:none;transition:box-shadow .15s;margin-bottom:10px
+}
+.ob-input-lg::placeholder{color:#3D6B5E;font-weight:300;font-size:18px}
+.ob-input-lg:focus{box-shadow:0 0 0 2px var(--mint)}
+.ob-input-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ob-unit{text-align:center;font-size:12px;color:var(--text2);margin-top:-4px;margin-bottom:16px;font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.ob-footer{padding:20px 28px;padding-bottom:calc(20px + env(safe-area-inset-bottom));flex-shrink:0}
+.ob-next-btn{
+  width:100%;padding:16px;background:var(--mint);color:#0B1D1A;
+  border:none;border-radius:var(--rs);font-size:16px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:opacity .15s
+}
+.ob-next-btn:active{opacity:.85}
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.spinner{
+  display:inline-block;width:15px;height:15px;
+  border:2px solid rgba(11,29,26,.25);border-top-color:#0B1D1A;
+  border-radius:50%;animation:spin .6s linear infinite;
+  vertical-align:middle;margin-right:7px
+}
+.spinner.light{border-color:rgba(111,214,184,.2);border-top-color:var(--mint)}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+.divider{border:none;border-top:1px solid var(--border);margin:12px 0}
+.pct-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px;margin-top:14px}
+.pbar{height:4px;background:var(--border2);border-radius:2px;overflow:hidden}
+.pfill{height:100%;border-radius:2px;transition:width .5s}
 </style>
 </head>
 <body>
 
-<!-- Auth Overlay -->
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     AUTH OVERLAY
+════════════════════════════════════════════════════════════════════════════ -->
 <div class="overlay" id="auth-overlay">
-  <div class="ologo">🥗</div>
-  <div class="otitle">NutriAI</div>
-  <div class="osub">Seu assistente nutricional inteligente</div>
-  <div class="auth-tabs">
-    <button class="auth-tab sel" id="abtl" onclick="showAuthTab('login')">Entrar</button>
-    <button class="auth-tab" id="abtr" onclick="showAuthTab('register')">Criar conta</button>
-  </div>
-  <!-- Login -->
-  <div id="auth-login-form">
-    <div class="fgroup"><label class="flabel">E-mail</label><input type="email" id="l-email" placeholder="seu@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-    <div class="fgroup"><label class="flabel">Senha</label><input type="password" id="l-pass" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-    <div class="auth-err" id="l-err"></div>
-    <button class="bp" id="l-btn" onclick="doLogin()">Entrar</button>
-  </div>
-  <!-- Register -->
-  <div id="auth-register-form" style="display:none">
-    <div class="fgroup"><label class="flabel">Nome</label><input type="text" id="r-name" placeholder="Seu nome" autocomplete="name"/></div>
-    <div class="fgroup"><label class="flabel">E-mail</label><input type="email" id="r-email" placeholder="seu@email.com" autocomplete="email"/></div>
-    <div class="fgroup"><label class="flabel">Senha</label><input type="password" id="r-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
-    <div class="auth-err" id="r-err"></div>
-    <button class="bp" id="r-btn" onclick="doRegister()">Criar conta</button>
+  <div class="auth-body">
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#6FD6B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C6 2 2 8 2 14c0 4 3 7 6 8 0-4 1-8 4-10 3 2 4 6 4 10 3-1 6-4 6-8 0-6-4-12-10-12z"/>
+        </svg>
+      </div>
+      <div class="auth-logo-text">NutriAI</div>
+    </div>
+
+    <!-- Login form -->
+    <div id="auth-login-form">
+      <div class="auth-tagline">Come melhor.<br><span>Viva mais leve.</span></div>
+      <div class="auth-sub">Seu assistente nutricional inteligente</div>
+      <div class="auth-form-title">Entrar</div>
+      <div class="fgroup">
+        <input type="email" id="l-email" placeholder="E-mail" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="fgroup">
+        <input type="password" id="l-pass" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="auth-err" id="l-err"></div>
+      <button class="bp" id="l-btn" onclick="doLogin()">Entrar</button>
+      <div class="auth-switch">Não tem conta? <a onclick="showAuthTab('register')">Criar conta grátis</a></div>
+    </div>
+
+    <!-- Register form -->
+    <div id="auth-register-form" style="display:none">
+      <div class="auth-tagline">Come melhor.<br><span>Viva mais leve.</span></div>
+      <div class="auth-sub">Crie sua conta e comece hoje</div>
+      <div class="auth-form-title">Criar conta</div>
+      <div class="fgroup">
+        <input type="text" id="r-name" placeholder="Seu nome" autocomplete="name"/>
+      </div>
+      <div class="fgroup">
+        <input type="email" id="r-email" placeholder="E-mail" autocomplete="email"/>
+      </div>
+      <div class="fgroup">
+        <input type="password" id="r-pass" placeholder="Senha (mín. 6 caracteres)" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/>
+      </div>
+      <div class="auth-err" id="r-err"></div>
+      <button class="bp" id="r-btn" onclick="doRegister()">Criar conta</button>
+      <div class="auth-switch">Já tem conta? <a onclick="showAuthTab('login')">Entrar</a></div>
+    </div>
   </div>
 </div>
 
-<!-- Profile Setup Overlay (hidden by default) -->
-<div class="overlay" id="profile-overlay" style="display:none">
-  <div class="ologo">🥗</div>
-  <div class="otitle">Bem-vindo ao NutriAI</div>
-  <div class="osub">Configure seu perfil para personalizar<br>suas metas calóricas e nutricionais.</div>
-  <div class="fgroup">
-    <label class="flabel">Seu nome</label>
-    <input type="text" id="p-name" placeholder="Como quer ser chamado?"/>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ONBOARDING OVERLAY
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="ob-overlay" id="profile-overlay" style="display:none">
+  <div class="ob-progress-bar">
+    <div class="ob-progress-fill" id="ob-progress" style="width:20%"></div>
   </div>
-  <div class="srow">
-    <div class="fgroup">
-      <label class="flabel">Idade</label>
-      <input type="number" id="p-age" placeholder="30" min="10" max="100"/>
+  <div class="ob-header">
+    <button class="ob-back-btn" id="ob-back" onclick="prevObStep()" style="visibility:hidden">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Voltar
+    </button>
+    <div class="ob-step-counter" id="ob-counter">1 de 5</div>
+    <div style="width:60px"></div>
+  </div>
+
+  <div class="ob-body">
+    <!-- Step 0: Nome -->
+    <div class="ob-step active" id="ob-s0">
+      <div class="ob-question">Qual é o seu nome?</div>
+      <div class="ob-hint">Vamos personalizar sua experiência</div>
+      <input class="ob-input-lg" type="text" id="p-name" placeholder="Seu primeiro nome" autocomplete="given-name"/>
     </div>
-    <div class="fgroup">
-      <label class="flabel">Altura (cm)</label>
-      <input type="number" id="p-height" placeholder="175" min="100" max="250"/>
+
+    <!-- Step 1: Idade + Altura -->
+    <div class="ob-step" id="ob-s1">
+      <div class="ob-question">Idade e altura</div>
+      <div class="ob-hint">Usamos para calcular sua taxa metabólica basal</div>
+      <div class="ob-input-row">
+        <div>
+          <input class="ob-input-lg" type="number" id="p-age" placeholder="30" min="10" max="100"/>
+          <div class="ob-unit">anos</div>
+        </div>
+        <div>
+          <input class="ob-input-lg" type="number" id="p-height" placeholder="175" min="100" max="250"/>
+          <div class="ob-unit">cm</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Sexo -->
+    <div class="ob-step" id="ob-s2">
+      <div class="ob-question">Sexo biológico</div>
+      <div class="ob-hint">Afeta o cálculo das calorias ideais</div>
+      <div class="ob-cards">
+        <div class="ob-card sel" id="rb-m" onclick="selSex('m')">
+          <div class="ob-card-icon">♂</div>
+          <div><div class="ob-card-text">Masculino</div><div class="ob-card-sub">Metabolismo basal mais alto</div></div>
+        </div>
+        <div class="ob-card" id="rb-f" onclick="selSex('f')">
+          <div class="ob-card-icon">♀</div>
+          <div><div class="ob-card-text">Feminino</div><div class="ob-card-sub">Fórmula ajustada para mulheres</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Peso -->
+    <div class="ob-step" id="ob-s3">
+      <div class="ob-question">Peso atual e meta</div>
+      <div class="ob-hint">Quanto você pesa hoje e onde quer chegar?</div>
+      <div class="ob-input-row">
+        <div>
+          <input class="ob-input-lg" type="number" id="p-weight" placeholder="70.0" step="0.1" min="30" max="300"/>
+          <div class="ob-unit">kg atual</div>
+        </div>
+        <div>
+          <input class="ob-input-lg" type="number" id="p-goal" placeholder="65.0" step="0.1" min="30" max="300"/>
+          <div class="ob-unit">kg meta</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Atividade -->
+    <div class="ob-step" id="ob-s4">
+      <div class="ob-question">Nível de atividade</div>
+      <div class="ob-hint">Com que frequência você se exercita?</div>
+      <div class="ob-cards">
+        <div class="ob-card" onclick="selActivity(this,'1.2')">
+          <div class="ob-card-icon">🪑</div>
+          <div><div class="ob-card-text">Sedentário</div><div class="ob-card-sub">Pouco ou nenhum exercício</div></div>
+        </div>
+        <div class="ob-card" onclick="selActivity(this,'1.375')">
+          <div class="ob-card-icon">🚶</div>
+          <div><div class="ob-card-text">Levemente ativo</div><div class="ob-card-sub">1–3× por semana</div></div>
+        </div>
+        <div class="ob-card sel" onclick="selActivity(this,'1.55')">
+          <div class="ob-card-icon">🏃</div>
+          <div><div class="ob-card-text">Moderadamente ativo</div><div class="ob-card-sub">3–5× por semana</div></div>
+        </div>
+        <div class="ob-card" onclick="selActivity(this,'1.725')">
+          <div class="ob-card-icon">🏋️</div>
+          <div><div class="ob-card-text">Muito ativo</div><div class="ob-card-sub">6–7× por semana</div></div>
+        </div>
+        <div class="ob-card" onclick="selActivity(this,'1.9')">
+          <div class="ob-card-icon">🥇</div>
+          <div><div class="ob-card-text">Atleta</div><div class="ob-card-sub">Treino intenso todos os dias</div></div>
+        </div>
+      </div>
+      <!-- Hidden select for saveProfile() compatibility -->
+      <select id="p-activity" style="display:none">
+        <option value="1.2">Sedentário</option>
+        <option value="1.375">Levemente ativo</option>
+        <option value="1.55" selected>Moderadamente ativo</option>
+        <option value="1.725">Muito ativo</option>
+        <option value="1.9">Extremamente ativo</option>
+      </select>
+      <!-- Hidden btn-start for saveProfile() compatibility -->
+      <button id="btn-start" onclick="saveProfile()" style="display:none">Começar</button>
     </div>
   </div>
-  <div class="fgroup">
-    <label class="flabel">Sexo</label>
-    <div class="radio-group">
-      <div class="rbtn sel" id="rb-m" onclick="selSex('m')">Masculino</div>
-      <div class="rbtn" id="rb-f" onclick="selSex('f')">Feminino</div>
-    </div>
+
+  <div class="ob-footer">
+    <button class="ob-next-btn" id="btn-ob-next" onclick="nextObStep()">Continuar →</button>
+    <button class="ob-next-btn" id="btn-ob-save" onclick="saveProfile()" style="display:none">Começar 🌿</button>
   </div>
-  <div class="srow">
-    <div class="fgroup">
-      <label class="flabel">Peso atual (kg)</label>
-      <input type="number" id="p-weight" placeholder="70.0" step="0.1" min="30" max="300"/>
-    </div>
-    <div class="fgroup">
-      <label class="flabel">Meta de peso (kg)</label>
-      <input type="number" id="p-goal" placeholder="65.0" step="0.1" min="30" max="300"/>
-    </div>
-  </div>
-  <div class="fgroup">
-    <label class="flabel">Nível de atividade</label>
-    <select id="p-activity">
-      <option value="1.2">Sedentário (pouco ou nenhum exercício)</option>
-      <option value="1.375">Levemente ativo (1-3x por semana)</option>
-      <option value="1.55" selected>Moderadamente ativo (3-5x por semana)</option>
-      <option value="1.725">Muito ativo (6-7x por semana)</option>
-      <option value="1.9">Extremamente ativo (atleta)</option>
-    </select>
-  </div>
-  <button class="bp" id="btn-start" onclick="saveProfile()">Começar</button>
 </div>
 
-<!-- Main App -->
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════════════════════════════════ -->
 <div class="app" id="main-app" style="display:none">
   <div class="header">
     <div class="hrow">
-      <div><h1 id="hname">NutriAI</h1><div class="hsub">Assistente nutricional inteligente</div></div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div class="hdate" id="hdate"></div>
-        <button onclick="openEditProfile()" title="Editar perfil" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--text3);line-height:1">⚙️</button>
-        <button onclick="logout()" title="Sair" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--text3);line-height:1">🚪</button>
+      <div>
+        <div class="hgreeting" id="hname">NutriAI</div>
+        <div class="hdate-pill" id="hdate"></div>
+      </div>
+      <div class="hactions">
+        <button class="hbtn" onclick="openEditProfile()" title="Editar perfil">⚙️</button>
+        <button class="hbtn" onclick="logout()" title="Sair">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- TODAY -->
+  <!-- ── TODAY ─────────────────────────────────────────────────────────────── -->
   <div class="section active" id="tab-hoje">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <span class="ctitle" style="margin:0">Calorias de hoje</span>
-        <span id="cal-badge" class="badge bg">dentro da meta</span>
-      </div>
-      <div class="ring-wrap">
-        <div class="ring-chart">
-          <svg width="88" height="88" viewBox="0 0 88 88">
-            <circle cx="44" cy="44" r="34" fill="none" stroke="var(--bg2)" stroke-width="11"/>
-            <circle id="ring-fill" cx="44" cy="44" r="34" fill="none" stroke="var(--green)" stroke-width="11" stroke-dasharray="213.6" stroke-dashoffset="213.6" stroke-linecap="round"/>
+    <div class="card" style="padding-top:22px">
+      <!-- Calorie ring -->
+      <div class="ring-section">
+        <div class="ring-wrap">
+          <svg width="150" height="150" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="60" fill="none" stroke="#1A3830" stroke-width="10"/>
+            <circle id="ring-fill" cx="75" cy="75" r="60" fill="none" stroke="#6FD6B8" stroke-width="10"
+              stroke-dasharray="376.99" stroke-dashoffset="376.99" stroke-linecap="round"/>
           </svg>
-          <div class="ring-center"><div class="ring-kcal" id="kcal-num">0</div><div class="ring-lbl">kcal</div></div>
+          <div class="ring-center">
+            <div class="ring-kcal" id="kcal-num">0</div>
+            <div class="ring-lbl">kcal</div>
+          </div>
         </div>
-        <div class="macros">
-          <div class="mrow"><div class="mdot" style="background:var(--green)"></div><span class="mname">Proteína</span><div class="mbar-bg"><div class="mbar" id="bp" style="background:var(--green);width:0%"></div></div><span class="mval" id="vp">0g</span></div>
-          <div class="mrow"><div class="mdot" style="background:var(--amber)"></div><span class="mname">Carbo</span><div class="mbar-bg"><div class="mbar" id="bc" style="background:var(--amber);width:0%"></div></div><span class="mval" id="vc">0g</span></div>
-          <div class="mrow"><div class="mdot" style="background:var(--pink)"></div><span class="mname">Gordura</span><div class="mbar-bg"><div class="mbar" id="bf" style="background:var(--pink);width:0%"></div></div><span class="mval" id="vf">0g</span></div>
+        <div class="ring-goal" id="goal-lbl">Meta: — kcal</div>
+        <div>
+          <span class="cal-status cal-ok" id="cal-badge">dentro da meta</span>
         </div>
       </div>
-      <div class="prow"><span id="goal-lbl">Meta: — kcal</span><span id="pct" style="font-weight:700;color:var(--text)">0%</span></div>
-      <div class="pbar"><div class="pfill" id="cprog" style="background:var(--green);width:0%"></div></div>
+      <div class="pct-row">
+        <span style="color:var(--text2);font-size:12px">Progresso</span>
+        <span id="pct" style="font-size:12px;font-weight:700;color:var(--text)">0%</span>
+      </div>
+      <div class="pbar"><div class="pfill" id="cprog" style="background:var(--mint);width:0%"></div></div>
     </div>
+
+    <!-- Macros -->
+    <div class="macro-row">
+      <div class="macro-card">
+        <div class="macro-val" id="vp">0g</div>
+        <div class="macro-bar-bg"><div class="macro-bar mint" id="bp" style="width:0%"></div></div>
+        <div class="macro-name">Proteína</div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-val" id="vc">0g</div>
+        <div class="macro-bar-bg"><div class="macro-bar gold" id="bc" style="width:0%"></div></div>
+        <div class="macro-name">Carbo</div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-val" id="vf">0g</div>
+        <div class="macro-bar-bg"><div class="macro-bar coral" id="bf" style="width:0%"></div></div>
+        <div class="macro-name">Gordura</div>
+      </div>
+    </div>
+
+    <!-- Meals -->
     <div class="card">
       <div class="ctitle">Refeições de hoje</div>
       <div id="meals-list"></div>
     </div>
   </div>
 
-  <!-- REGISTER -->
+  <!-- ── REGISTER ───────────────────────────────────────────────────────────── -->
   <div class="section" id="tab-registrar">
-    <div class="card">
-      <div class="ctitle" style="margin-bottom:4px">Como quer registrar?</div>
-      <div class="csub">Escolha o método</div>
-      <div class="mgrid">
-        <button class="mbtn sel" id="btn-foto" onclick="selMethod('foto')">
-          <span class="mico">📷</span><span class="mlbl">Foto</span><span class="msub">Tire ou envie uma foto do prato</span>
-        </button>
-        <button class="mbtn" id="btn-texto" onclick="selMethod('texto')">
-          <span class="mico">✏️</span><span class="mlbl">Texto</span><span class="msub">Descreva o que comeu</span>
-        </button>
-      </div>
+    <!-- Method toggle -->
+    <div class="method-grid">
+      <button class="mbtn sel" id="btn-foto" onclick="selMethod('foto')">
+        <span class="mico">📷</span><span class="mlbl">Foto</span>
+        <span class="msub">IA identifica o prato automaticamente</span>
+      </button>
+      <button class="mbtn" id="btn-texto" onclick="selMethod('texto')">
+        <span class="mico">✏️</span><span class="mlbl">Texto</span>
+        <span class="msub">Descreva o que você comeu</span>
+      </button>
     </div>
+
+    <!-- Photo panel -->
     <div id="panel-foto">
-      <div class="card">
-        <div class="ctitle" style="margin-bottom:4px">Foto da refeição</div>
-        <div class="csub">A IA identifica automaticamente — funciona com qualquer prato, embalagem ou shake!</div>
-        <select id="fmsel" style="margin-bottom:12px">
-          <option value="0">Café da manhã</option>
-          <option value="1" selected>Almoço</option>
-          <option value="2">Lanche</option>
-          <option value="3">Jantar</option>
-        </select>
-        <input type="file" id="finput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)"/>
-        <div class="pdrop" id="pdrop" onclick="document.getElementById('finput').click()">
-          <div class="dico">📷</div>
-          <div class="dtitle">Toque para tirar foto</div>
-          <div class="dsub">ou escolha da galeria — shake, prato, embalagem...</div>
-        </div>
-        <div id="foto-out"></div>
-      </div>
-    </div>
-    <div id="panel-texto" style="display:none">
-      <div class="card">
-        <div class="ctitle" style="margin-bottom:4px">Descreva o que comeu</div>
-        <div class="csub">A IA estima calorias e macros automaticamente</div>
-        <select id="tmsel" style="margin-bottom:12px">
-          <option value="0">Café da manhã</option>
-          <option value="1" selected>Almoço</option>
-          <option value="2">Lanche</option>
-          <option value="3">Jantar</option>
-        </select>
-        <textarea id="fdesc" rows="3" placeholder="Ex: shake de whey DUX chocolate 300ml com leite..." style="margin-bottom:10px;resize:none;border-radius:var(--rs)"></textarea>
-        <button class="bp" id="btn-analisar" onclick="analyzeText()">Analisar com IA</button>
-        <div id="texto-out" style="margin-top:10px"></div>
-        <div style="margin-top:14px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">Sugestões rápidas</div>
-          <div class="tags">
-            <span class="tag" onclick="quickAdd('Shake de whey protein DUX chocolate 40g com 300ml de leite desnatado')">🥤 Shake whey DUX</span>
-            <span class="tag" onclick="quickAdd('Café da manhã com pão integral, ovo mexido e café com leite')">☕ Café da manhã</span>
-            <span class="tag" onclick="quickAdd('Almoço com arroz, feijão, frango grelhado e salada')">🍽️ Almoço executivo</span>
-            <span class="tag" onclick="quickAdd('Açaí 300ml com banana e granola')">🫐 Açaí 300ml</span>
-            <span class="tag" onclick="quickAdd('Pão de queijo 3 unidades médias')">🧀 Pão de queijo</span>
-            <span class="tag" onclick="quickAdd('Jantar leve com sopa de legumes e torrada integral')">🍜 Jantar leve</span>
+      <select id="fmsel" style="margin-bottom:12px">
+        <option value="0">Café da manhã</option>
+        <option value="1" selected>Almoço</option>
+        <option value="2">Lanche</option>
+        <option value="3">Jantar</option>
+      </select>
+      <input type="file" id="finput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)"/>
+      <div class="camera-zone" id="pdrop" onclick="document.getElementById('finput').click()">
+        <div class="camera-guide">
+          <div class="camera-ring">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#6FD6B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
           </div>
+          <div class="camera-label">Fotografe seu prato</div>
+          <div class="camera-hint">Prato, embalagem, shake, qualquer alimento</div>
+        </div>
+      </div>
+      <div id="foto-out"></div>
+    </div>
+
+    <!-- Text panel -->
+    <div id="panel-texto" style="display:none">
+      <select id="tmsel" style="margin-bottom:12px">
+        <option value="0">Café da manhã</option>
+        <option value="1" selected>Almoço</option>
+        <option value="2">Lanche</option>
+        <option value="3">Jantar</option>
+      </select>
+      <textarea id="fdesc" rows="3" placeholder="Ex: arroz, feijão, frango grelhado e salada..." style="margin-bottom:10px"></textarea>
+      <button class="bp" id="btn-analisar" onclick="analyzeText()">Analisar com IA</button>
+      <div id="texto-out" style="margin-top:12px"></div>
+      <div style="margin-top:20px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Sugestões rápidas</div>
+        <div class="tags">
+          <span class="tag" onclick="quickAdd('Shake de whey protein DUX chocolate 40g com 300ml de leite desnatado')">🥤 Shake whey DUX</span>
+          <span class="tag" onclick="quickAdd('Café da manhã com pão integral, ovo mexido e café com leite')">☕ Café da manhã</span>
+          <span class="tag" onclick="quickAdd('Almoço com arroz, feijão, frango grelhado e salada')">🍽️ Almoço executivo</span>
+          <span class="tag" onclick="quickAdd('Açaí 300ml com banana e granola')">🫐 Açaí 300ml</span>
+          <span class="tag" onclick="quickAdd('Pão de queijo 3 unidades médias')">🧀 Pão de queijo</span>
+          <span class="tag" onclick="quickAdd('Jantar leve com sopa de legumes e torrada integral')">🍜 Jantar leve</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- HISTÓRICO -->
+  <!-- ── HISTÓRICO ──────────────────────────────────────────────────────────── -->
   <div class="section" id="tab-historico">
-    <div class="card" id="hist-stats" style="display:none">
-      <div class="sgrid" style="margin-bottom:0">
-        <div class="sc"><div class="slbl">Média calórica</div><div><span class="sval" id="hist-avg">—</span><span class="sunit"> kcal</span></div></div>
-        <div class="sc"><div class="slbl">Dias na meta</div><div><span class="sval" id="hist-ok">—</span></div></div>
+    <div class="sgrid" id="hist-stats" style="display:none">
+      <div class="sc">
+        <div class="slbl">Média calórica</div>
+        <div><span class="sval" id="hist-avg">—</span><span class="sunit"> kcal</span></div>
+      </div>
+      <div class="sc">
+        <div class="slbl">Dias na meta</div>
+        <div><span class="sval" id="hist-ok">—</span></div>
       </div>
     </div>
     <div class="card">
@@ -362,10 +678,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
-  <!-- INTEGRAÇÕES -->
+  <!-- ── CONECTAR ───────────────────────────────────────────────────────────── -->
   <div class="section" id="tab-integracoes">
-    <div class="card" id="int-dashboard" style="display:none">
-      <div class="ctitle">Resumo de hoje</div>
+    <!-- Dashboard stats (shown when connected) -->
+    <div id="int-dashboard" style="display:none">
       <div class="metric-grid">
         <div class="metric-card">
           <div class="metric-icon">👟</div>
@@ -380,54 +696,80 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
       </div>
       <div class="balance-card">
-        <div class="balance-row"><span class="balance-label">Consumidas</span><span class="balance-val" id="int-consumed">— kcal</span></div>
-        <div class="balance-row"><span class="balance-label">Gastas</span><span class="balance-val" id="int-burned2">— kcal</span></div>
-        <div style="border-top:0.5px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:13px;color:var(--text3)">Saldo</span>
+        <div class="balance-row">
+          <span class="balance-label">🍽 Consumidas</span>
+          <span class="balance-val" style="color:var(--coral)" id="int-consumed">— kcal</span>
+        </div>
+        <div class="balance-row">
+          <span class="balance-label">⚡ Gastas</span>
+          <span class="balance-val" style="color:var(--mint)" id="int-burned2">— kcal</span>
+        </div>
+        <hr class="balance-divider"/>
+        <div class="balance-row">
+          <span class="balance-label" style="font-weight:600;color:var(--text)">Saldo</span>
           <span class="balance-net" id="int-balance">—</span>
         </div>
       </div>
     </div>
-    <div class="card" id="int-weight-card" style="display:none">
-      <div class="ctitle">Última medição — Withings</div>
-      <div id="int-weight-data"></div>
+
+    <!-- Withings weight card -->
+    <div id="int-weight-card" style="display:none">
+      <div class="card">
+        <div class="ctitle">Última medição — Withings</div>
+        <div id="int-weight-data"></div>
+      </div>
     </div>
+
+    <!-- Provider cards -->
     <div class="card">
-      <div class="ctitle">Conectar dispositivos</div>
-      <div class="int-provider">
-        <div class="int-logo" style="background:#FC4C02">🏃</div>
-        <div class="int-info"><div class="int-name">Strava</div><div class="int-status" id="strava-status">Não conectado</div></div>
-        <button class="bo" id="strava-btn" onclick="connectStrava()">Conectar</button>
+      <div class="ctitle">Dispositivos</div>
+      <div class="provider-card">
+        <div class="provider-logo" style="background:#FC4C02">🏃</div>
+        <div class="provider-info">
+          <div class="provider-name">Strava</div>
+          <div class="int-status" id="strava-status">Não conectado</div>
+        </div>
+        <button class="bo-mint" id="strava-btn" onclick="connectStrava()">Conectar</button>
       </div>
-      <div class="int-provider">
-        <div class="int-logo" style="background:#4285F4">🏋️</div>
-        <div class="int-info"><div class="int-name">Google Fit</div><div class="int-status" id="google-status">Não conectado</div></div>
-        <button class="bo" id="google-btn" onclick="connectGoogle()">Conectar</button>
+      <div class="provider-card">
+        <div class="provider-logo" style="background:#4285F4">🏋️</div>
+        <div class="provider-info">
+          <div class="provider-name">Google Fit</div>
+          <div class="int-status" id="google-status">Não conectado</div>
+        </div>
+        <button class="bo-mint" id="google-btn" onclick="connectGoogle()">Conectar</button>
       </div>
-      <div class="int-provider">
-        <div class="int-logo" style="background:#00B5AD">⚖️</div>
-        <div class="int-info"><div class="int-name">Withings</div><div class="int-status" id="withings-status">Não conectado</div></div>
-        <button class="bo" id="withings-btn" onclick="connectWithings()">Conectar</button>
+      <div class="provider-card">
+        <div class="provider-logo" style="background:#00B5AD">⚖️</div>
+        <div class="provider-info">
+          <div class="provider-name">Withings</div>
+          <div class="int-status" id="withings-status">Não conectado</div>
+        </div>
+        <button class="bo-mint" id="withings-btn" onclick="connectWithings()">Conectar</button>
       </div>
     </div>
+
+    <!-- Strava activities -->
     <div class="card" id="strava-activities-card" style="display:none">
       <div class="ctitle">Atividades — últimos 7 dias</div>
       <div id="strava-activities-list"></div>
     </div>
+
+    <!-- Manual weight log -->
     <div class="card">
       <div class="ctitle">Registrar peso manualmente</div>
-      <div class="csub">Para quem não tem Withings</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Para quem não tem Withings</div>
       <div class="wrow">
         <input type="number" id="int-weight-input" placeholder="Ex: 72.0" step="0.1" min="30" max="300"/>
-        <button class="bo" onclick="logWeightManual()" style="padding:12px 20px">Salvar</button>
+        <button class="bo" onclick="logWeightManual()" style="padding:14px 20px">Salvar</button>
       </div>
     </div>
   </div>
 
-  <!-- PERFIL -->
+  <!-- ── PERFIL ──────────────────────────────────────────────────────────────── -->
   <div class="section" id="tab-perfil">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <span class="ctitle" style="margin:0">Meu perfil</span>
         <button class="bo" onclick="openEditProfile()">Editar</button>
       </div>
@@ -435,11 +777,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="card">
       <div class="ctitle">Registrar peso hoje</div>
-      <div class="wrow">
+      <div class="wrow" style="margin-bottom:8px">
         <input type="number" id="nw" placeholder="Ex: 72.0" step="0.1" min="30" max="300"/>
-        <button class="bo" onclick="logWeight()" style="padding:12px 20px">Salvar</button>
+        <button class="bo" onclick="logWeight()" style="padding:14px 20px">Salvar</button>
       </div>
-      <div style="font-size:12px;color:var(--text3)">Pese-se sempre no mesmo horário.</div>
+      <div style="font-size:12px;color:var(--text2)">Pese-se sempre no mesmo horário para melhores resultados.</div>
     </div>
     <div class="card">
       <div class="ctitle">Evolução de peso</div>
@@ -447,12 +789,28 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
+  <!-- ── NAV ───────────────────────────────────────────────────────────────── -->
   <nav class="bottom-nav">
-    <button class="nav-item active" onclick="goTab('hoje',this)"><span class="nav-icon">🏠</span><span class="nav-label">Hoje</span></button>
-    <button class="nav-item" onclick="goTab('registrar',this)"><span class="nav-icon">➕</span><span class="nav-label">Registrar</span></button>
-    <button class="nav-item" onclick="goTab('historico',this)"><span class="nav-icon">📅</span><span class="nav-label">Histórico</span></button>
-    <button class="nav-item" onclick="goTab('integracoes',this)"><span class="nav-icon">📊</span><span class="nav-label">Conectar</span></button>
-    <button class="nav-item" onclick="goTab('perfil',this)"><span class="nav-icon">👤</span><span class="nav-label">Perfil</span></button>
+    <button class="nav-item active" onclick="goTab('hoje',this)">
+      <span class="nav-icon">🏠</span><span>Hoje</span>
+    </button>
+    <button class="nav-item nav-fab" onclick="goTab('registrar',this)">
+      <div class="nav-fab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0B1D1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </div>
+    </button>
+    <button class="nav-item" onclick="goTab('historico',this)">
+      <span class="nav-icon">📅</span><span>Histórico</span>
+    </button>
+    <button class="nav-item" onclick="goTab('integracoes',this)">
+      <span class="nav-icon">📊</span><span>Conectar</span>
+    </button>
+    <button class="nav-item" onclick="goTab('perfil',this)">
+      <span class="nav-icon">👤</span><span>Perfil</span>
+    </button>
   </nav>
 </div>
 
@@ -467,7 +825,7 @@ function clearAuth(){
   localStorage.removeItem('nutriai_onboarded');
   localStorage.removeItem('nutriai_profile');
 }
-let currentUser=null; // {userId, email, name}
+let currentUser=null;
 
 // ── State ──────────────────────────────────────────────────────────────────
 const TODAY=new Date().toISOString().slice(0,10);
@@ -489,8 +847,7 @@ let curImg=null,curImgUrl=null,wChart=null;
 // ── API helpers ────────────────────────────────────────────────────────────
 function handleUnauth(){
   clearAuth();currentUser=null;profile=null;
-  resetState();
-  showAuthOverlay();
+  resetState();showAuthOverlay();
 }
 
 async function apiData(params){
@@ -498,10 +855,8 @@ async function apiData(params){
   const isGet=params.method==='GET';
   const query={...(params.query||{})};
   const body={...(params.body||{})};
-  // Inject token; strip any legacy userId fields
   if(token){if(isGet)query.token=token;else body.token=token;}
   delete query.userId;delete body.userId;
-
   if(isGet){
     const r=await fetch('/api/data?'+new URLSearchParams(query));
     if(r.status===401){handleUnauth();throw new Error('Unauthorized');}
@@ -526,6 +881,7 @@ function showApp(){
   document.getElementById('main-app').style.display='';
 }
 function showOnboarding(){
+  obStep=0;showObStep(0);
   document.getElementById('auth-overlay').style.display='none';
   document.getElementById('profile-overlay').style.display='';
   document.getElementById('main-app').style.display='none';
@@ -534,8 +890,6 @@ function showOnboarding(){
 function showAuthTab(tab){
   document.getElementById('auth-login-form').style.display=tab==='login'?'':'none';
   document.getElementById('auth-register-form').style.display=tab==='register'?'':'none';
-  document.getElementById('abtl').classList.toggle('sel',tab==='login');
-  document.getElementById('abtr').classList.toggle('sel',tab==='register');
 }
 
 async function doLogin(){
@@ -584,8 +938,7 @@ async function logout(){
   const token=getToken();
   try{await fetch('/api/auth?action=logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});}catch(e){}
   clearAuth();currentUser=null;profile=null;
-  resetState();
-  showAuthOverlay();
+  resetState();showAuthOverlay();
 }
 
 function resetState(){
@@ -598,7 +951,6 @@ function resetState(){
 }
 
 async function postAuthInit(){
-  // Pre-fill name from registration/login
   if(currentUser?.name)document.getElementById('p-name').value=currentUser.name;
   try{
     const ob=await apiData({method:'GET',query:{action:'getOnboarding'}});
@@ -610,8 +962,7 @@ async function postAuthInit(){
         localStorage.setItem('nutriai_onboarded','1');
         applyProfile();
       }
-      showApp();
-      await loadToday();
+      showApp();await loadToday();
     }else{
       showOnboarding();
     }
@@ -619,6 +970,39 @@ async function postAuthInit(){
     console.warn('postAuthInit error:',e);
     if(e.message!=='Unauthorized')showOnboarding();
   }
+}
+
+// ── Onboarding steps ───────────────────────────────────────────────────────
+let obStep=0;
+let selectedActivity='1.55';
+
+function showObStep(n){
+  document.querySelectorAll('.ob-step').forEach((el,i)=>{
+    el.classList.toggle('active',i===n);
+  });
+  document.getElementById('ob-progress').style.width=((n+1)/5*100)+'%';
+  document.getElementById('ob-back').style.visibility=n>0?'visible':'hidden';
+  document.getElementById('ob-counter').textContent=(n+1)+' de 5';
+  document.getElementById('btn-ob-next').style.display=n<4?'':'none';
+  document.getElementById('btn-ob-save').style.display=n===4?'':'none';
+}
+
+function nextObStep(){
+  if(obStep===0&&!document.getElementById('p-name').value.trim()){
+    document.getElementById('p-name').focus();return;
+  }
+  if(obStep<4){obStep++;showObStep(obStep);}
+}
+
+function prevObStep(){
+  if(obStep>0){obStep--;showObStep(obStep);}
+}
+
+function selActivity(el,val){
+  selectedActivity=val;
+  document.getElementById('p-activity').value=val;
+  document.querySelectorAll('#ob-s4 .ob-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
 }
 
 // ── Calorie goal (Mifflin-St Jeor) ────────────────────────────────────────
@@ -646,10 +1030,10 @@ async function saveProfile(){
   const height=parseInt(document.getElementById('p-height').value);
   const weight=parseFloat(document.getElementById('p-weight').value);
   const goalWeight=parseFloat(document.getElementById('p-goal').value);
-  const activity=parseFloat(document.getElementById('p-activity').value);
+  const activity=parseFloat(document.getElementById('p-activity').value||selectedActivity);
   if(!name||!age||!height||!weight||!goalWeight){alert('Preencha todos os campos.');return;}
-  const btn=document.getElementById('btn-start');
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Salvando...';
+  const saveBtn=document.getElementById('btn-ob-save');
+  saveBtn.disabled=true;saveBtn.innerHTML='<span class="spinner"></span>Salvando...';
   profile={name,age,sex:selectedSex,height,weight,goalWeight,activity};
   try{
     await apiData({body:{action:'saveProfile',profile}});
@@ -657,19 +1041,19 @@ async function saveProfile(){
     localStorage.setItem('nutriai_onboarded','1');
     localStorage.setItem('nutriai_profile',JSON.stringify(profile));
   }catch(e){console.warn('Save profile failed:',e);}
-  btn.disabled=false;btn.textContent='Começar';
-  applyProfile();
-  showApp();
+  saveBtn.disabled=false;saveBtn.textContent='Começar 🌿';
+  applyProfile();showApp();
 }
 
 function applyProfile(){
   if(!profile)return;
   const g=calcGoal(profile);
   calorieGoal=g.kcal;protGoal=g.prot;carbGoal=g.carb;fatGoal=g.fat;
-  document.getElementById('hname').textContent='Olá, '+profile.name.split(' ')[0]+'  🥗';
+  const h=new Date().getHours();
+  const gr=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+  document.getElementById('hname').textContent=gr+', '+profile.name.split(' ')[0]+' 👋';
   document.getElementById('goal-lbl').textContent='Meta: '+calorieGoal+' kcal';
-  renderProfileInfo();
-  updateRing();
+  renderProfileInfo();updateRing();
 }
 
 function renderProfileInfo(){
@@ -699,7 +1083,13 @@ function openEditProfile(){
   document.getElementById('p-goal').value=profile.goalWeight;
   document.getElementById('p-activity').value=profile.activity;
   selSex(profile.sex);
-  document.getElementById('btn-start').textContent='Salvar alterações';
+  // Restore activity card selection
+  selectedActivity=String(profile.activity);
+  document.querySelectorAll('#ob-s4 .ob-card').forEach(c=>{
+    const v=c.getAttribute('onclick')?.match(/'([\d.]+)'/)?.[1];
+    c.classList.toggle('sel',v===selectedActivity);
+  });
+  document.getElementById('btn-ob-save').textContent='Salvar alterações';
   showOnboarding();
 }
 
@@ -770,7 +1160,7 @@ function handleFile(e){
 
 async function analyzePhoto(b64,mime){
   const out=document.getElementById('foto-out');
-  out.innerHTML='<div class="air loading"><span class="spinner"></span>Analisando a foto — identificando alimentos...</div>';
+  out.innerHTML='<div class="air loading"><span class="spinner light"></span>Analisando a foto — identificando alimentos...</div>';
   try{
     const txt=await callProxy([{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mime,data:b64}},
@@ -781,21 +1171,23 @@ async function analyzePhoto(b64,mime){
     const qc=p.qualidade==='boa'?'bg':p.qualidade==='razoavel'?'ba':'br';
     const ql=p.qualidade==='boa'?'equilibrada':p.qualidade==='razoavel'?'pode melhorar':'atenção';
     out.innerHTML=`
-      <div class="air" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-        <span>${p.analise} — <strong>${p.totalKcal} kcal</strong></span>
-        <span class="badge ${qc}">${ql}</span>
-      </div>
-      <div class="clist">
-        ${p.itens.map(it=>`
-          <div class="citem">
-            <div style="flex:1;min-width:0">
-              <div class="cname">${it.nome}</div>
-              <div class="cmacro">${it.porcao} · ${it.kcal} kcal · P:${it.prot}g C:${it.carb}g G:${it.fat}g</div>
-            </div>
-            <button class="bo" onclick='addFoto(${JSON.stringify(it)},this)' style="font-size:12px;padding:6px 10px">+ Add</button>
-          </div>`).join('')}
-      </div>
-      <button class="bp" style="margin-top:10px" onclick="addAllFoto()">+ Adicionar todos</button>`;
+      <div class="analysis-sheet">
+        <div class="air" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px">
+          <span>${p.analise} — <strong>${p.totalKcal} kcal</strong></span>
+          <span class="badge ${qc}">${ql}</span>
+        </div>
+        <div class="clist">
+          ${p.itens.map(it=>`
+            <div class="citem">
+              <div style="flex:1;min-width:0">
+                <div class="cname">${it.nome}</div>
+                <div class="cmacro">${it.porcao} · ${it.kcal} kcal · P:${it.prot}g C:${it.carb}g G:${it.fat}g</div>
+              </div>
+              <button class="bo" onclick='addFoto(${JSON.stringify(it)},this)' style="font-size:12px;padding:6px 10px">+ Add</button>
+            </div>`).join('')}
+        </div>
+        <button class="bp" style="margin-top:12px" onclick="addAllFoto()">+ Adicionar todos</button>
+      </div>`;
   }catch(e){
     out.innerHTML=`<div class="air loading">Erro ao analisar a foto. (${e.message})</div>`;
   }
@@ -817,22 +1209,24 @@ async function analyzeText(){
   const btn=document.getElementById('btn-analisar');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Analisando...';
   const out=document.getElementById('texto-out');
-  out.innerHTML='<div class="air loading"><span class="spinner"></span>Analisando...</div>';
+  out.innerHTML='<div class="air loading"><span class="spinner light"></span>Analisando...</div>';
   try{
     const txt=await callProxy([{role:'user',content:`Nutricionista brasileiro. Usuário comeu: "${desc}". SOMENTE JSON sem markdown: {"itens":[{"nome":"alimento","porcao":"200g","kcal":220,"prot":10,"carb":30,"fat":5}],"totalKcal":220,"analise":"até 60 chars"}`}]);
     const p=JSON.parse(txt);
     const idx=parseInt(document.getElementById('tmsel').value);
     out.innerHTML=`
-      <div class="air">${p.analise} — <strong>${p.totalKcal} kcal total</strong></div>
-      <div class="clist">
-        ${p.itens.map(it=>`
-          <div class="citem">
-            <div style="flex:1;min-width:0">
-              <div class="cname">${it.nome}</div>
-              <div class="cmacro">${it.porcao} · ${it.kcal} kcal · P:${it.prot}g C:${it.carb}g G:${it.fat}g</div>
-            </div>
-            <button class="bo" onclick='addTxt(${JSON.stringify(it)},${idx},this)' style="font-size:12px;padding:6px 10px">+ Add</button>
-          </div>`).join('')}
+      <div class="analysis-sheet">
+        <div class="air" style="margin-bottom:12px">${p.analise} — <strong>${p.totalKcal} kcal total</strong></div>
+        <div class="clist">
+          ${p.itens.map(it=>`
+            <div class="citem">
+              <div style="flex:1;min-width:0">
+                <div class="cname">${it.nome}</div>
+                <div class="cmacro">${it.porcao} · ${it.kcal} kcal · P:${it.prot}g C:${it.carb}g G:${it.fat}g</div>
+              </div>
+              <button class="bo" onclick='addTxt(${JSON.stringify(it)},${idx},this)' style="font-size:12px;padding:6px 10px">+ Add</button>
+            </div>`).join('')}
+        </div>
       </div>`;
   }catch(e){out.innerHTML=`<div class="air loading">Erro ao analisar. (${e.message})</div>`;}
   btn.disabled=false;btn.textContent='Analisar com IA';
@@ -856,7 +1250,7 @@ function renderMeals(){
       <div class="empty-state">
         <div class="empty-icon">🍽️</div>
         <div class="empty-txt">Nenhuma refeição registrada</div>
-        <div class="empty-sub">Toque em Registrar para adicionar sua primeira refeição do dia!</div>
+        <div class="empty-sub">Toque no botão de câmera para adicionar sua primeira refeição!</div>
       </div>`;
     return;
   }
@@ -874,18 +1268,19 @@ function renderMeals(){
     </div>`).join('');
 }
 
-// ── Update calorie ring ────────────────────────────────────────────────────
+// ── Update calorie ring ─────────────────────────────────────────────────────
 function updateRing(){
   const pct=Math.min(state.kcal/calorieGoal,1);
-  document.getElementById('ring-fill').setAttribute('stroke-dashoffset',(213.6*(1-pct)).toFixed(1));
+  // r=60, circumference=376.99
+  document.getElementById('ring-fill').setAttribute('stroke-dashoffset',(376.99*(1-pct)).toFixed(1));
   document.getElementById('kcal-num').textContent=state.kcal;
   const p=Math.round(pct*100)+'%';
   document.getElementById('pct').textContent=p;
   document.getElementById('cprog').style.width=p;
-  const b=document.getElementById('cal-badge');
-  if(pct>1.05){b.className='badge br';b.textContent='acima da meta';}
-  else if(pct>0.9){b.className='badge ba';b.textContent='próximo da meta';}
-  else{b.className='badge bg';b.textContent='dentro da meta';}
+  const badge=document.getElementById('cal-badge');
+  if(pct>1.05){badge.className='cal-status cal-over';badge.textContent='⚠ acima da meta';}
+  else if(pct>0.9){badge.className='cal-status cal-warn';badge.textContent='⬆ próximo da meta';}
+  else{badge.className='cal-status cal-ok';badge.textContent='✓ dentro da meta';}
   document.getElementById('vp').textContent=state.prot+'g';
   document.getElementById('vc').textContent=state.carb+'g';
   document.getElementById('vf').textContent=state.fat+'g';
@@ -912,13 +1307,34 @@ async function renderWChart(){
   const ctx=document.getElementById('wchart').getContext('2d');
   if(wChart)wChart.destroy();
   if(!weights.length){ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);return;}
-  wChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{data:weights,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1D9E75',fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.raw.toFixed(1)+' kg'}}},scales:{x:{grid:{color:'rgba(128,128,128,0.08)'},ticks:{font:{size:10},maxTicksLimit:7}},y:{grid:{color:'rgba(128,128,128,0.08)'},ticks:{font:{size:10},callback:v=>v.toFixed(1)},min:Math.min(...weights)-.5,max:Math.max(...weights)+.5}}}});
+  wChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{
+    data:weights,
+    borderColor:'#6FD6B8',
+    backgroundColor:'rgba(111,214,184,0.08)',
+    borderWidth:2,pointRadius:4,pointBackgroundColor:'#6FD6B8',
+    fill:true,tension:0.4
+  }]},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'#0F2822',borderColor:'#1A3830',borderWidth:1,
+        titleColor:'#6B9E94',bodyColor:'#fff',
+        callbacks:{label:v=>v.raw.toFixed(1)+' kg'}
+      }
+    },
+    scales:{
+      x:{grid:{color:'rgba(111,214,184,0.06)'},ticks:{color:'#6B9E94',font:{size:10},maxTicksLimit:7}},
+      y:{grid:{color:'rgba(111,214,184,0.06)'},ticks:{color:'#6B9E94',font:{size:10},callback:v=>v.toFixed(1)},
+        min:Math.min(...weights)-.5,max:Math.max(...weights)+.5}
+    }
+  }});
 }
 
 // ── History ────────────────────────────────────────────────────────────────
 async function loadHistory(){
   const list=document.getElementById('hist-list');
-  list.innerHTML='<div class="air loading" style="text-align:center"><span class="spinner dark"></span>Carregando histórico...</div>';
+  list.innerHTML='<div class="air loading" style="text-align:center"><span class="spinner light"></span> Carregando histórico...</div>';
   try{
     const d=await apiData({method:'GET',query:{action:'getAllDays'}});
     const days=d.days||{};
@@ -939,13 +1355,13 @@ async function loadHistory(){
       const dd=days[date];
       const kcal=dd?.totals?.kcal||0;
       const mcount=dd?.meals?.reduce((s,m)=>s+m.items.length,0)||0;
-      const [y,m,day]=date.split('-');
+      const[y,m,day]=date.split('-');
       const label=`${day}/${m}/${y}`+(date===TODAY?' (hoje)':'');
       const pct=calorieGoal?Math.round(kcal/calorieGoal*100):0;
       const bc=pct>105?'br':pct>90?'ba':'bg';
       const meals=(dd?.meals||[]).filter(m=>m.items.length);
       const detailId='hist-'+date;
-      return `
+      return`
         <div>
           <div class="hist-item" onclick="toggleHist('${detailId}')">
             <div><div class="hist-date">${label}</div><div class="hist-sub">${mcount} item${mcount!==1?'s':''} registrado${mcount!==1?'s':''}</div></div>
@@ -954,12 +1370,10 @@ async function loadHistory(){
           <div class="hist-detail" id="${detailId}">
             ${meals.map(m=>`
               <div style="padding:6px 0">
-                <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">${m.name} — ${m.kcal} kcal</div>
-                ${m.items.map(i=>`<div class="fitem" style="padding:5px 0"><div class="fleft">${i.img?`<img src="${i.img}" class="fthumb" alt="${i.n}"/>`:''}
-                  <div><div class="fname">${i.n}</div><div class="fportion">${i.p}</div></div></div>
-                  <span class="fkcal">${i.k} kcal</span></div>`).join('')}
+                <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">${m.name} — ${m.kcal} kcal</div>
+                ${m.items.map(i=>`<div class="fitem" style="padding:5px 0"><div class="fleft">${i.img?`<img src="${i.img}" class="fthumb" alt="${i.n}"/>`:''}<div><div class="fname">${i.n}</div><div class="fportion">${i.p}</div></div></div><span class="fkcal">${i.k} kcal</span></div>`).join('')}
               </div>`).join('')}
-            ${dd?.weight?`<div style="font-size:12px;color:var(--text3);padding:6px 0;border-top:0.5px solid var(--border)">⚖️ Peso registrado: <strong>${dd.weight} kg</strong></div>`:''}
+            ${dd?.weight?`<div style="font-size:12px;color:var(--text2);padding:6px 0;border-top:1px solid var(--border)">⚖️ Peso: <strong style="color:var(--text)">${dd.weight} kg</strong></div>`:''}
           </div>
         </div>`;
     }).join('');
@@ -968,7 +1382,7 @@ async function loadHistory(){
 
 function toggleHist(id){const el=document.getElementById(id);if(el)el.classList.toggle('open');}
 
-// ── Integrations ──────────────────────────────────────────────────────────
+// ── Integrations ───────────────────────────────────────────────────────────
 function connectStrava(){const t=getToken();window.location.href='/api/oauth?provider=strava&action=start&token='+encodeURIComponent(t);}
 function connectGoogle(){const t=getToken();window.location.href='/api/oauth?provider=google&action=start&token='+encodeURIComponent(t);}
 function connectWithings(){const t=getToken();window.location.href='/api/oauth?provider=withings&action=start&token='+encodeURIComponent(t);}
@@ -976,7 +1390,6 @@ function connectWithings(){const t=getToken();window.location.href='/api/oauth?p
 async function loadIntegrations(){
   const params=new URLSearchParams(location.search);
   if(params.get('connected')||params.get('error'))history.replaceState({},'','/');
-
   const token=getToken();
   try{
     const r=await fetch('/api/health-data?type=activities&token='+encodeURIComponent(token));
@@ -993,7 +1406,6 @@ async function loadIntegrations(){
         :d.strava.map(a=>`<div class="fitem"><div><div class="fname">${a.name}</div><div class="fportion">${a.type} · ${a.date} · ${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div></div><span class="fkcal">${a.calories?a.calories+' kcal':'—'}</span></div>`).join('');
     }else if(d.errors?.strava==='not_connected'){document.getElementById('strava-status').textContent='Não conectado';}
     else if(d.errors?.strava){document.getElementById('strava-status').textContent='Erro: '+d.errors.strava;}
-
     if(d.google){
       document.getElementById('google-status').textContent='Conectado ✓';
       document.getElementById('google-status').className='int-status connected';
@@ -1010,7 +1422,6 @@ async function loadIntegrations(){
     }else if(d.errors?.google==='not_connected'){document.getElementById('google-status').textContent='Não conectado';}
     else if(d.errors?.google){document.getElementById('google-status').textContent='Erro: '+d.errors.google;}
   }catch(e){console.warn('loadIntegrations activities error:',e);}
-
   try{
     const r=await fetch('/api/health-data?type=weight&token='+encodeURIComponent(token));
     if(r.status===401)return;
@@ -1045,34 +1456,23 @@ document.getElementById('hdate').textContent=new Date().toLocaleDateString('pt-B
 async function init(){
   const token=getToken();
   if(!token){showAuthOverlay();return;}
-
-  // Instant load from localStorage cache
   const cachedProfile=localStorage.getItem('nutriai_profile');
   const onboarded=localStorage.getItem('nutriai_onboarded');
   if(onboarded&&cachedProfile){
     try{profile=JSON.parse(cachedProfile);}catch(e){}
     if(profile){applyProfile();showApp();loadToday();}
   }
-
-  // Verify session with server
   try{
     const r=await fetch('/api/auth?action=me&token='+encodeURIComponent(token));
     if(!r.ok){handleUnauth();return;}
     const d=await r.json();
     currentUser={userId:d.userId,email:d.email,name:d.name};
-    if(profile)renderProfileInfo(); // refresh email display
+    if(profile)renderProfileInfo();
   }catch(e){
-    // Network error: trust cache if available
     if(!onboarded){handleUnauth();}
     return;
   }
-
-  if(!onboarded){
-    await postAuthInit();
-    return;
-  }
-
-  // Refresh profile from Redis in background
+  if(!onboarded){await postAuthInit();return;}
   apiData({method:'GET',query:{action:'getProfile'}}).then(d=>{
     if(d.profile){
       profile=d.profile;
@@ -1080,8 +1480,6 @@ async function init(){
       applyProfile();
     }
   }).catch(()=>{});
-
-  // Handle OAuth callback redirect
   const params=new URLSearchParams(location.search);
   if(params.get('connected')||params.get('error')){
     const navBtns=document.querySelectorAll('.nav-item');
