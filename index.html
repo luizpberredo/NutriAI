@@ -887,16 +887,17 @@ let profile=null;
 let calorieGoal=2000;
 let exerciseBurnedToday=0;  // calorias gastas em exercício hoje (Strava + Google Fit)
 let protGoal=150,carbGoal=225,fatGoal=60;
-let state={
-  kcal:0,prot:0,carb:0,fat:0,
-  meals:[
-    {name:'Café da manhã',kcal:0,items:[]},
-    {name:'Almoço',kcal:0,items:[]},
-    {name:'Lanche',kcal:0,items:[]},
-    {name:'Jantar',kcal:0,items:[]}
-  ],
-  weight:null
-};
+const MEAL_NAMES=['Café da manhã','Lanche da manhã','Almoço','Lanche da tarde','Jantar','Ceia'];
+function freshMeals(){return MEAL_NAMES.map(name=>({name,kcal:0,items:[]}));}
+// Ensures saved data (possibly from old 4-slot schema) always has all 6 slots
+function normalizeMeals(meals){
+  if(!Array.isArray(meals))return freshMeals();
+  const base=freshMeals();
+  // Map by name to handle reordering; fall back to index for unnamed entries
+  const byName=Object.fromEntries(meals.map(m=>m.name?[m.name,m]:[]));
+  return base.map(slot=>byName[slot.name]||slot);
+}
+let state={kcal:0,prot:0,carb:0,fat:0,meals:freshMeals(),weight:null};
 let curImg=null,curImgUrl=null,wChart=null;
 
 // ── API helpers ────────────────────────────────────────────────────────────
@@ -990,14 +991,7 @@ async function logout(){
 }
 
 function resetState(){
-  state={kcal:0,prot:0,carb:0,fat:0,meals:[
-    {name:'Café da manhã',kcal:0,items:[]},
-    {name:'Lanche da manhã',kcal:0,items:[]},
-    {name:'Almoço',kcal:0,items:[]},
-    {name:'Lanche da tarde',kcal:0,items:[]},
-    {name:'Jantar',kcal:0,items:[]},
-    {name:'Ceia',kcal:0,items:[]}
-  ],weight:null};
+  state={kcal:0,prot:0,carb:0,fat:0,meals:freshMeals(),weight:null};
 }
 
 async function postAuthInit(){
@@ -1258,7 +1252,7 @@ async function loadToday(){
     const d=await apiData({method:'GET',query:{action:'getDay',date:TODAY}});
     if(d.dayData){
       const dd=d.dayData;
-      state.meals=dd.meals||state.meals;
+      state.meals=normalizeMeals(dd.meals||state.meals);
       state.weight=dd.weight||null;
       state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);
       state.prot=dd.totals?.prot||0;
@@ -1334,7 +1328,7 @@ async function loadDayView(date){
     const d=await apiData({method:'GET',query:{action:'getDay',date}});
     if(d.dayData){
       const dd=d.dayData;
-      state.meals=dd.meals||state.meals;
+      state.meals=normalizeMeals(dd.meals||state.meals);
       state.weight=dd.weight||null;
       state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);
       state.prot=dd.totals?.prot||0;state.carb=dd.totals?.carb||0;state.fat=dd.totals?.fat||0;
