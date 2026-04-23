@@ -1141,26 +1141,28 @@ async function saveProfile(){
   const prazoData=calcPrazoData(prazoMeses,weight,goalWeight,age,height,selectedSex||'m',activity);
   profile={name,age,sex:selectedSex,height,weight,goalWeight,activity,prazoMeses,metaKcal:prazoData.meta};
 
-  // ── 1. Salva local imediatamente — não bloqueia navegação ─────────────────
+  // ── 1. Salva local imediatamente ─────────────────────────────────────────
   localStorage.setItem('nutriai_onboarded','1');
   localStorage.setItem('nutriai_profile',JSON.stringify(profile));
 
-  // ── 2. Vai para o dashboard imediatamente ─────────────────────────────────
-  applyProfile();
-  showApp();
+  // ── 2. Navega para o dashboard imediatamente (sempre, mesmo se der erro) ──
   saveBtn.disabled=false;saveBtn.textContent=isEdit?'Salvar alterações':'Começar 🍏';
-  if(!isEdit) loadToday();
+  try{applyProfile();}catch(e){console.error('[saveProfile] applyProfile error:',e);}
+  try{showApp();}catch(e){console.error('[saveProfile] showApp error:',e);}
+  if(!isEdit){try{loadToday();}catch(e){console.error('[saveProfile] loadToday error:',e);}}
 
-  // ── 3. Tenta persistir no Redis em background (sem bloquear) ──────────────
-  (async()=>{
+  // ── 3. Sync Redis em background — usa fetch raw para não chamar handleUnauth
+  setTimeout(async()=>{
+    const token=getToken();
+    if(!token)return;
+    const base='/api/data';
+    const headers={'Content-Type':'application/json'};
     try{
-      await apiData({body:{action:'saveProfile',profile}});
-      await apiData({body:{action:'saveOnboarding'}});
-      console.log('[saveProfile] synced to Redis OK');
-    }catch(e){
-      console.error('[saveProfile] Redis sync failed (dados salvos local):', e.message, e);
-    }
-  })();
+      await fetch(base,{method:'POST',headers,body:JSON.stringify({action:'saveProfile',profile,token})});
+      await fetch(base,{method:'POST',headers,body:JSON.stringify({action:'saveOnboarding',token})});
+      console.log('[saveProfile] Redis sync OK');
+    }catch(e){console.error('[saveProfile] Redis sync failed:',e.message);}
+  },0);
 }
 
 function applyProfile(){
@@ -1195,10 +1197,12 @@ function renderProfileTab(){
 
 function renderProfileInfo(){
   if(!profile)return;
+  const el=document.getElementById('profile-info');
+  if(!el)return; // element removed in new profile tab design
   const actLabels={'1.2':'Sedentário','1.375':'Levemente ativo','1.55':'Moderadamente ativo','1.725':'Muito ativo','1.9':'Extremamente ativo'};
   const g=calcGoal(profile);
   const email=currentUser?.email||'';
-  document.getElementById('profile-info').innerHTML=[
+  el.innerHTML=[
     ['Nome',profile.name],
     email?['E-mail',email]:[],
     ['Idade',profile.age+' anos'],
@@ -1210,6 +1214,7 @@ function renderProfileInfo(){
     ['Meta calórica',g.kcal+' kcal/dia'],
   ].filter(r=>r.length).map(([l,v])=>`<div class="pinfo-row"><span class="pinfo-label">${l}</span><span class="pinfo-val">${v}</span></div>`).join('');
 }
+
 
 function openEditProfile(){
   if(!profile)return;
@@ -1754,7 +1759,7 @@ async function init(){
     if(!onboarded){handleUnauth();}
     return;
   }
-  if(!onboarded){await postAuthInit();return;}
+  if(!onboarded){postAuthInit();return;} // fire-and-forget — postAuthInit shows onboarding
   apiData({method:'GET',query:{action:'getProfile'}}).then(d=>{
     if(d.profile){
       profile=d.profile;
