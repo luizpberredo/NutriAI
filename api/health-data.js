@@ -113,16 +113,33 @@ export default async function handler(req, res) {
       }
       const activities = await r.json();
       console.log('[health-data] Strava activities count:', activities.length);
-      activities.forEach(a => {
-        console.log('[health-data] activity fields:', JSON.stringify({
-          id: a.id, name: a.name, type: a.type, sport_type: a.sport_type,
-          calories: a.calories, kilojoules: a.kilojoules,
-          average_heartrate: a.average_heartrate, has_heartrate: a.has_heartrate,
-          visibility: a.visibility, flagged: a.flagged,
-        }));
-      });
-      result.strava = activities.map(a => {
-        // Resolve calorias: campo direto → kilojoules convertido → null
+
+      // Busca detalhes individuais para garantir campo calories completo
+      const detailed = await Promise.all(activities.map(async a => {
+        // Se a lista já trouxe calorias ou kilojoules, usa direto (evita chamada extra)
+        if ((a.calories && a.calories > 0) || (a.kilojoules && a.kilojoules > 0)) {
+          console.log('[health-data] list OK:', a.name, 'cal:', a.calories, 'kj:', a.kilojoules);
+          return a;
+        }
+        try {
+          const dr = await fetch(`https://www.strava.com/api/v3/activities/${a.id}`, {
+            headers: { Authorization: `Bearer ${tokens.access_token}` },
+          });
+          if (!dr.ok) { console.warn('[health-data] detail fetch failed', a.id, dr.status); return a; }
+          const det = await dr.json();
+          console.log('[health-data] detail', det.name, JSON.stringify({
+            calories: det.calories, kilojoules: det.kilojoules,
+            has_heartrate: det.has_heartrate, average_heartrate: det.average_heartrate,
+            visibility: det.visibility,
+          }));
+          return { ...a, calories: det.calories, kilojoules: det.kilojoules };
+        } catch (e) {
+          console.warn('[health-data] detail error', a.id, e.message);
+          return a;
+        }
+      }));
+
+      result.strava = detailed.map(a => {
         let calories = null;
         if (a.calories && a.calories > 0) {
           calories = Math.round(a.calories);

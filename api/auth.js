@@ -120,5 +120,23 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // ── POST /api/auth?action=disconnect  body: {token, provider} ────────────
+  if (action === 'disconnect') {
+    const sessionToken = req.body?.token || req.query?.token;
+    const provider = req.body?.provider || req.query?.provider;
+    if (!sessionToken || !provider) return res.status(400).json({ error: 'token and provider required' });
+    const session = await kv.get(`session:${sessionToken}`);
+    if (!session || new Date(session.expiresAt) < new Date()) return res.status(401).json({ error: 'Unauthorized' });
+    const keyMap = { strava: 'strava_tokens', google: 'google_tokens', withings: 'withings_tokens' };
+    const key = keyMap[provider];
+    if (!key) return res.status(400).json({ error: 'Unknown provider' });
+    try {
+      await kv.del(`${key}:${session.userId}`);
+      return res.status(200).json({ ok: true });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   return res.status(400).json({ error: 'Unknown action' });
 }

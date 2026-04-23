@@ -225,6 +225,7 @@ button,input,select,textarea{font-family:inherit}
 .bo{padding:9px 16px;background:var(--white);border:1.5px solid var(--border2);border-radius:var(--rs);font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
 .bo:active{border-color:var(--green);color:var(--green-dk)}
 .bo-green{padding:9px 16px;background:var(--green-lt);border:1.5px solid var(--green);border-radius:var(--rs);font-size:13px;font-weight:700;color:var(--green-dk);cursor:pointer;font-family:inherit}
+.bo-red{padding:7px 14px;background:#FFF0EE;border:1.5px solid var(--red);border-radius:var(--rs);font-size:12px;font-weight:600;color:var(--red);cursor:pointer;font-family:inherit}
 /* ── Inputs ──────────────────────────────────────────────────────────────── */
 input[type=text],input[type=number],input[type=email],input[type=password],textarea,select{
   width:100%;padding:14px 16px;border:1.5px solid var(--border2);border-radius:var(--rs);
@@ -445,7 +446,7 @@ textarea{resize:none}
           <span style="font-size:14px">🔥</span>
           <span class="streak-num" id="streak-count">0</span>
         </div>
-        <button class="hbtn" onclick="openEditProfile()" title="Editar perfil">⚙️</button>
+        <button class="hbtn" onclick="switchTab('integracoes')" title="Integrações">⚙️</button>
         <button class="hbtn" onclick="logout()" title="Sair">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
@@ -649,17 +650,26 @@ textarea{resize:none}
       <div class="provider-card">
         <div class="provider-logo" style="background:#FC4C02">🏃</div>
         <div class="provider-info"><div class="provider-name">Strava</div><div class="int-status" id="strava-status">Não conectado</div></div>
-        <button class="bo-green" id="strava-btn" onclick="connectStrava()">Conectar</button>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="bo-green" id="strava-btn" onclick="connectStrava()">Conectar</button>
+          <button class="bo-red" id="strava-disc" onclick="disconnectProvider('strava')" style="display:none">Desconectar</button>
+        </div>
       </div>
       <div class="provider-card">
         <div class="provider-logo" style="background:#4285F4">🏋️</div>
         <div class="provider-info"><div class="provider-name">Google Fit</div><div class="int-status" id="google-status">Não conectado</div></div>
-        <button class="bo-green" id="google-btn" onclick="connectGoogle()">Conectar</button>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="bo-green" id="google-btn" onclick="connectGoogle()">Conectar</button>
+          <button class="bo-red" id="google-disc" onclick="disconnectProvider('google')" style="display:none">Desconectar</button>
+        </div>
       </div>
       <div class="provider-card" style="margin-bottom:0">
         <div class="provider-logo" style="background:#00B5AD">⚖️</div>
         <div class="provider-info"><div class="provider-name">Withings</div><div class="int-status" id="withings-status">Não conectado</div></div>
-        <button class="bo-green" id="withings-btn" onclick="connectWithings()">Conectar</button>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="bo-green" id="withings-btn" onclick="connectWithings()">Conectar</button>
+          <button class="bo-red" id="withings-disc" onclick="disconnectProvider('withings')" style="display:none">Desconectar</button>
+        </div>
       </div>
     </div>
 
@@ -1307,6 +1317,37 @@ function connectStrava(){const t=getToken();window.location.href='/api/oauth?pro
 function connectGoogle(){const t=getToken();window.location.href='/api/oauth?provider=google&action=start&token='+encodeURIComponent(t);}
 function connectWithings(){const t=getToken();window.location.href='/api/oauth?provider=withings&action=start&token='+encodeURIComponent(t);}
 
+function setProviderConnected(provider, connected){
+  const btn=document.getElementById(provider+'-btn');
+  const disc=document.getElementById(provider+'-disc');
+  const status=document.getElementById(provider+'-status');
+  if(connected){
+    if(btn)btn.textContent='Reconectar';
+    if(disc)disc.style.display='';
+    if(status){status.textContent='Conectado ✓';status.className='int-status connected';}
+  }else{
+    if(btn)btn.textContent='Conectar';
+    if(disc)disc.style.display='none';
+    if(status){status.textContent='Não conectado';status.className='int-status';}
+  }
+}
+
+async function disconnectProvider(provider){
+  if(!confirm(`Desconectar ${provider}?`))return;
+  try{
+    await fetch('/api/auth?action=disconnect&token='+encodeURIComponent(getToken())+'&provider='+provider,{method:'POST'});
+    setProviderConnected(provider,false);
+    if(provider==='strava'){
+      document.getElementById('strava-activities-card').style.display='none';
+      document.getElementById('today-activities-card').style.display='none';
+    }
+    if(provider==='google'){
+      document.getElementById('int-dashboard').style.display='none';
+      document.getElementById('pill-burned-wrap').style.display='none';
+    }
+  }catch(e){alert('Erro ao desconectar: '+e.message);}
+}
+
 function actIcon(type){
   const t=(type||'').toLowerCase();
   if(t.includes('run')||t.includes('walk'))return'🏃';
@@ -1332,9 +1373,7 @@ async function loadIntegrations(){
     let totalBurnedToday=0;
 
     if(d.strava){
-      document.getElementById('strava-status').textContent='Conectado ✓';
-      document.getElementById('strava-status').className='int-status connected';
-      document.getElementById('strava-btn').textContent='Reconectar';
+      setProviderConnected('strava',true);
 
       // ── Atividades de hoje (card home) ────────────────────────────────────
       const todayActs=d.strava.filter(a=>a.date===TODAY);
@@ -1371,13 +1410,11 @@ async function loadIntegrations(){
       list7.innerHTML=d.strava.length===0
         ?'<div class="empty-state" style="padding:16px 0"><div class="empty-txt">Nenhuma atividade nos últimos 7 dias</div></div>'
         :d.strava.map(a=>`<div class="fitem"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">${actIcon(a.type)}</span><div><div class="fname">${a.name}</div><div class="fportion">${a.date} · ${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div></div></div><span class="fkcal">${a.calories?a.calories+' kcal':'—'}</span></div>`).join('');
-    }else if(d.errors?.strava==='not_connected'){document.getElementById('strava-status').textContent='Não conectado';}
+    }else if(d.errors?.strava==='not_connected'){setProviderConnected('strava',false);}
     else if(d.errors?.strava){document.getElementById('strava-status').textContent='Erro: '+d.errors.strava;console.warn('[loadIntegrations] strava error:',d.errors.strava);}
 
     if(d.google){
-      document.getElementById('google-status').textContent='Conectado ✓';
-      document.getElementById('google-status').className='int-status connected';
-      document.getElementById('google-btn').textContent='Reconectar';
+      setProviderConnected('google',true);
       document.getElementById('int-steps').textContent=d.google.steps.toLocaleString('pt-BR');
       document.getElementById('int-burned').textContent=d.google.calories_burned;
       document.getElementById('int-burned2').textContent=d.google.calories_burned+' kcal';
@@ -1388,7 +1425,7 @@ async function loadIntegrations(){
       balEl.className='balance-net '+(balance>0?'surplus':'deficit');
       document.getElementById('int-dashboard').style.display='';
       totalBurnedToday+=d.google.calories_burned;
-    }else if(d.errors?.google==='not_connected'){document.getElementById('google-status').textContent='Não conectado';}
+    }else if(d.errors?.google==='not_connected'){setProviderConnected('google',false);}
     else if(d.errors?.google){document.getElementById('google-status').textContent='Erro: '+d.errors.google;}
 
     // ── Atualiza meta ajustada + pill de queimados ─────────────────────────
@@ -1407,11 +1444,9 @@ async function loadIntegrations(){
     const r=await fetch('/api/health-data?type=weight&token='+encodeURIComponent(token));
     if(r.status===401)return;
     const d=await r.json();
-    if(d.error==='not_connected'){document.getElementById('withings-status').textContent='Não conectado';}
+    if(d.error==='not_connected'){setProviderConnected('withings',false);}
     else if(d.measurements?.length){
-      document.getElementById('withings-status').textContent='Conectado ✓';
-      document.getElementById('withings-status').className='int-status connected';
-      document.getElementById('withings-btn').textContent='Reconectar';
+      setProviderConnected('withings',true);
       const latest=d.measurements[d.measurements.length-1];
       document.getElementById('int-weight-card').style.display='';
       document.getElementById('int-weight-data').innerHTML=`
