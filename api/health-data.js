@@ -96,7 +96,7 @@ export default async function handler(req, res) {
 
     try {
       let tokens = await kv.get(`strava_tokens:${userId}`);
-      console.log('[health-data] userId:', userId, '| strava tokens found:', !!tokens, tokens ? `expires_at:${tokens.expires_at}` : '');
+      console.log('[health-data] userId:', userId, '| strava tokens found:', !!tokens, tokens ? `expires_at:${tokens.expires_at} scope:${tokens.scope}` : '');
       if (!tokens) throw new Error('not_connected');
       tokens = await refreshStravaToken(tokens, userId);
       const after = Math.floor((Date.now() - 7 * 86400 * 1000) / 1000);
@@ -112,17 +112,34 @@ export default async function handler(req, res) {
         throw new Error(`Strava API error: ${r.status}`);
       }
       const activities = await r.json();
-      console.log('[health-data] Strava activities count:', activities.length, activities.slice(0,2).map(a=>({name:a.name,date:a.start_date_local,cal:a.calories})));
-      result.strava = activities.map(a => ({
-        id: a.id,
-        name: a.name,
-        type: a.sport_type || a.type,
-        date: a.start_date_local?.slice(0, 10),
-        duration_min: Math.round(a.moving_time / 60),
-        distance_km: a.distance ? +(a.distance / 1000).toFixed(2) : null,
-        calories: a.calories || null,
-        elevation_m: a.total_elevation_gain || null,
-      }));
+      console.log('[health-data] Strava activities count:', activities.length);
+      activities.forEach(a => {
+        console.log('[health-data] activity fields:', JSON.stringify({
+          id: a.id, name: a.name, type: a.type, sport_type: a.sport_type,
+          calories: a.calories, kilojoules: a.kilojoules,
+          average_heartrate: a.average_heartrate, has_heartrate: a.has_heartrate,
+          visibility: a.visibility, flagged: a.flagged,
+        }));
+      });
+      result.strava = activities.map(a => {
+        // Resolve calorias: campo direto → kilojoules convertido → null
+        let calories = null;
+        if (a.calories && a.calories > 0) {
+          calories = Math.round(a.calories);
+        } else if (a.kilojoules && a.kilojoules > 0) {
+          calories = Math.round(a.kilojoules / 4.184);
+        }
+        return {
+          id: a.id,
+          name: a.name,
+          type: a.sport_type || a.type,
+          date: a.start_date_local?.slice(0, 10),
+          duration_min: Math.round(a.moving_time / 60),
+          distance_km: a.distance ? +(a.distance / 1000).toFixed(2) : null,
+          calories,
+          elevation_m: a.total_elevation_gain || null,
+        };
+      });
     } catch (e) {
       result.errors.strava = e.message;
     }

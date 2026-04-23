@@ -113,11 +113,13 @@ export default async function handler(req, res) {
         });
         if (!r.ok) throw new Error(`Strava token exchange failed: ${r.status}`);
         const tokens = await r.json();
+        console.log('[oauth] Strava token exchange scope:', tokens.scope, 'athlete:', tokens.athlete?.id);
         await kv.set(`strava_tokens:${userId}`, {
           access_token: tokens.access_token,
           refresh_token: tokens.refresh_token,
           expires_at: tokens.expires_at,
           athlete_id: tokens.athlete?.id,
+          scope: tokens.scope || null,
         });
         return res.redirect(302, '/?connected=strava');
       }
