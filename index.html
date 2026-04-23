@@ -478,9 +478,10 @@ textarea{resize:none}
           <div class="cal-ring-center">🔥</div>
         </div>
       </div>
-      <!-- Burned pill (shown when Google Fit connected) -->
-      <div id="cal-pills-row" style="display:none;margin-bottom:12px">
-        <span class="cal-pill orange">🏃 <span id="pill-burned-val">0</span> kcal queimadas</span>
+      <!-- Pills row: burned (Google Fit) + exercise bonus -->
+      <div id="cal-pills-row" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px">
+        <span class="cal-pill orange" id="pill-burned-wrap" style="display:none">🏃 <span id="pill-burned-val">0</span> kcal queimadas</span>
+        <span class="cal-pill" id="pill-exercise-wrap" style="display:none;background:var(--green-lt);color:var(--green-dk)">💪 +<span id="pill-exercise-val">0</span> kcal do treino</span>
       </div>
       <!-- Progress bar -->
       <div class="pct-row">
@@ -743,6 +744,7 @@ let currentUser=null;
 const TODAY=new Date().toISOString().slice(0,10);
 let profile=null;
 let calorieGoal=2000;
+let exerciseBurnedToday=0;  // calorias gastas em exercício hoje (Strava + Google Fit)
 let protGoal=150,carbGoal=225,fatGoal=60;
 let state={
   kcal:0,prot:0,carb:0,fat:0,
@@ -1193,7 +1195,9 @@ function renderMeals(){
 // Main ring: r=44, C=2π×44=276.46
 // Macro rings: r=24, C=2π×24=150.8
 function updateRing(){
-  const pct=Math.min(state.kcal/calorieGoal,1);
+  // Meta ajustada = meta base + calorias gastas em exercício
+  const effectiveGoal = calorieGoal + exerciseBurnedToday;
+  const pct=Math.min(state.kcal/effectiveGoal,1);
   document.getElementById('ring-fill').setAttribute('stroke-dashoffset',(276.46*(1-pct)).toFixed(1));
   document.getElementById('kcal-num').textContent=state.kcal;
   const p=Math.round(pct*100)+'%';
@@ -1206,11 +1210,20 @@ function updateRing(){
   document.getElementById('vp').textContent=state.prot+'g';
   document.getElementById('vc').textContent=state.carb+'g';
   document.getElementById('vf').textContent=state.fat+'g';
-  // Macro mini rings (stroke-dashoffset instead of width)
   document.getElementById('bp').setAttribute('stroke-dashoffset',(150.8*(1-Math.min(state.prot/protGoal,1))).toFixed(1));
   document.getElementById('bc').setAttribute('stroke-dashoffset',(150.8*(1-Math.min(state.carb/carbGoal,1))).toFixed(1));
   document.getElementById('bf').setAttribute('stroke-dashoffset',(150.8*(1-Math.min(state.fat/fatGoal,1))).toFixed(1));
-  document.getElementById('goal-lbl').textContent='/'+calorieGoal+' kcal';
+  document.getElementById('goal-lbl').textContent='/'+effectiveGoal+' kcal';
+  // Pill bônus de treino
+  const exWrap=document.getElementById('pill-exercise-wrap');
+  if(exWrap){
+    if(exerciseBurnedToday>0){
+      document.getElementById('pill-exercise-val').textContent=exerciseBurnedToday;
+      exWrap.style.display='';
+    }else{
+      exWrap.style.display='none';
+    }
+  }
 }
 
 // ── Weight log ─────────────────────────────────────────────────────────────
@@ -1345,7 +1358,9 @@ async function loadIntegrations(){
                 <div class="fportion">${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div>
               </div>
             </div>
-            <span class="fkcal" style="color:var(--green)">${a.calories?a.calories+' kcal':'—'}</span>
+            ${a.calories
+              ?`<span class="fkcal" style="color:var(--green);font-weight:700">${a.calories} kcal</span>`
+              :`<span class="fkcal" style="color:var(--text3);font-size:12px">cal. não disponível</span>`}
           </div>`).join('');
         todayTotal.textContent=stravaCalToday?stravaCalToday+' kcal gastas':'';
       }
@@ -1376,11 +1391,17 @@ async function loadIntegrations(){
     }else if(d.errors?.google==='not_connected'){document.getElementById('google-status').textContent='Não conectado';}
     else if(d.errors?.google){document.getElementById('google-status').textContent='Erro: '+d.errors.google;}
 
-    // ── Update pill on main card (Strava today + Google Fit) ───────────────
+    // ── Atualiza meta ajustada + pill de queimados ─────────────────────────
     if(totalBurnedToday>0){
-      const pillEl=document.getElementById('pill-burned-val');
-      if(pillEl){pillEl.textContent=totalBurnedToday;document.getElementById('cal-pills-row').style.display='';}
+      exerciseBurnedToday=totalBurnedToday;
+      // Pill queimadas (Google Fit)
+      const burnedWrap=document.getElementById('pill-burned-wrap');
+      if(burnedWrap&&d.google){
+        document.getElementById('pill-burned-val').textContent=d.google.calories_burned;
+        burnedWrap.style.display='';
+      }
     }
+    updateRing();  // re-renderiza com meta ajustada
   }catch(e){console.warn('loadIntegrations activities error:',e);}
   try{
     const r=await fetch('/api/health-data?type=weight&token='+encodeURIComponent(token));
