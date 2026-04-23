@@ -1362,7 +1362,7 @@ async function init(){
   const onboarded=localStorage.getItem('nutriai_onboarded');
   if(onboarded&&cachedProfile){
     try{profile=JSON.parse(cachedProfile);}catch(e){}
-    if(profile){applyProfile();showApp();loadToday();}
+    if(profile){applyProfile();showApp();loadToday();loadIntegrations();}
   }
   try{
     const r=await fetch('/api/auth?action=me&token='+encodeURIComponent(token));
@@ -1389,6 +1389,9 @@ async function init(){
     document.getElementById('tab-integracoes').classList.add('active');
     navBtns.forEach(n=>n.classList.remove('active'));
     document.getElementById('nav-integracoes').classList.add('active');
+    loadIntegrations();
+  } else {
+    // Carrega integrações em background para atualizar pill de queimados na home
     loadIntegrations();
   }
 }

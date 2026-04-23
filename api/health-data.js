@@ -107,7 +107,7 @@ export default async function handler(req, res) {
       result.strava = activities.map(a => ({
         id: a.id,
         name: a.name,
-        type: a.type,
+        type: a.sport_type || a.type,
         date: a.start_date_local?.slice(0, 10),
         duration_min: Math.round(a.moving_time / 60),
         distance_km: a.distance ? +(a.distance / 1000).toFixed(2) : null,
