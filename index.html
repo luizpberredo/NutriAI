@@ -178,6 +178,16 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:
 .hist-kcal{font-size:15px;font-weight:700;color:var(--green)}
 .hist-detail{display:none;padding:12px 0 4px;border-bottom:1px solid var(--border)}
 .hist-detail.open{display:block}
+/* ── Profile screen ─────────────────────────────────────────────────────── */
+.prof-avatar-wrap{display:flex;flex-direction:column;align-items:center;padding:20px 0 10px}
+.prof-avatar{width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:#fff;margin-bottom:10px}
+.prof-name{font-size:20px;font-weight:800;color:var(--text)}
+.prof-email-txt{font-size:13px;color:var(--text2);margin-top:2px}
+.prof-section-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.prof-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.prof-row:last-child{border-bottom:none}
+.prof-row-label{font-size:14px;color:var(--text2)}
+.prof-row-val{font-size:14px;font-weight:700;color:var(--text)}
 /* ── Integrations ────────────────────────────────────────────────────────── */
 .provider-card{display:flex;align-items:center;gap:14px;background:var(--white);border-radius:var(--rs);box-shadow:var(--shadow);padding:16px;margin-bottom:10px}
 .provider-logo{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
@@ -489,7 +499,7 @@ textarea{resize:none}
           <span style="font-size:14px">🔥</span>
           <span class="streak-num" id="streak-count">0</span>
         </div>
-        <button class="hbtn" onclick="goTab('integracoes',document.getElementById('nav-integracoes'))" title="Integrações">⚙️</button>
+        <button class="hbtn" onclick="goTab('perfil',document.getElementById('nav-perfil'))" title="Perfil">⚙️</button>
         <button class="hbtn" onclick="logout()" title="Sair">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
@@ -733,34 +743,97 @@ textarea{resize:none}
 
   <!-- ── PERFIL ─────────────────────────────────────────────────────────────── -->
   <div class="section" id="tab-perfil">
+
+    <!-- Avatar + nome -->
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div class="ctitle" style="margin:0;font-size:17px;font-weight:700;color:var(--text)">Meu perfil</div>
-        <button class="bo" onclick="openEditProfile()">Editar</button>
+      <div class="prof-avatar-wrap">
+        <div class="prof-avatar" id="prof-avatar">?</div>
+        <div class="prof-name" id="prof-name-display">—</div>
+        <div class="prof-email-txt" id="prof-email-display">—</div>
       </div>
-      <div id="profile-info"></div>
+      <button class="bo" style="width:100%;margin-top:4px" onclick="openEditProfile()">✏️ Editar perfil completo</button>
     </div>
-    <div class="card" id="prazo-profile-card" style="display:none">
-      <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:14px">⏱ Ajustar prazo da meta</div>
+
+    <!-- Minha Meta -->
+    <div class="card">
+      <div class="prof-section-title">Minha Meta</div>
+      <div class="prof-row">
+        <span class="prof-row-label">Peso atual</span>
+        <span class="prof-row-val" id="prof-weight">—</span>
+      </div>
+      <div class="prof-row">
+        <span class="prof-row-label">Peso meta</span>
+        <span class="prof-row-val" id="prof-goal-weight">—</span>
+      </div>
+      <div class="prof-row" style="border-bottom:none;padding-bottom:0">
+        <span class="prof-row-label">Meta calórica atual</span>
+        <span class="prof-row-val" id="prof-kcal-meta">—</span>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 10px"/>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px">⏱ Ajustar prazo</div>
       <div class="prazo-slider-wrap">
         <input type="range" id="prazo-slider-profile" min="1" max="24" value="6" class="prazo-slider" oninput="updatePrazoCardProfile()"/>
         <div class="prazo-marks"><span>1m</span><span>6m</span><span>12m</span><span>18m</span><span>24m</span></div>
       </div>
       <div class="prazo-card" id="prazo-card-profile"></div>
-      <button class="ob-next-btn" style="margin-top:16px" onclick="savePrazoProfile()">Salvar meta</button>
+      <button class="ob-next-btn" style="margin-top:14px" onclick="savePrazoProfile()">Salvar meta</button>
     </div>
+
+    <!-- Minhas Integrações -->
     <div class="card">
-      <div class="ctitle" style="font-size:17px;font-weight:700;color:var(--text)">Registrar peso hoje</div>
+      <div class="prof-section-title">Minhas Integrações</div>
+      <div class="provider-card">
+        <div class="provider-logo" style="background:#FC4C02">🏃</div>
+        <div class="provider-info"><div class="provider-name">Strava</div><div class="int-status" id="p-strava-status">Não conectado</div></div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="bo-green" id="p-strava-btn" onclick="connectStrava()">Conectar</button>
+          <button class="bo-red" id="p-strava-disc" onclick="disconnectProvider('strava')" style="display:none">Desconectar</button>
+        </div>
+      </div>
+      <div class="provider-card">
+        <div class="provider-logo" style="background:#4285F4">🏋️</div>
+        <div class="provider-info"><div class="provider-name">Google Fit</div><div class="int-status" id="p-google-status">Não conectado</div></div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="bo-green" id="p-google-btn" onclick="connectGoogle()">Conectar</button>
+          <button class="bo-red" id="p-google-disc" onclick="disconnectProvider('google')" style="display:none">Desconectar</button>
+        </div>
+      </div>
+      <div class="provider-card" style="margin-bottom:0">
+        <div class="provider-logo" style="background:#00B5AD">⚖️</div>
+        <div class="provider-info"><div class="provider-name">Withings</div><div class="int-status" id="p-withings-status">Não conectado</div></div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="bo-green" id="p-withings-btn" onclick="connectWithings()">Conectar</button>
+          <button class="bo-red" id="p-withings-disc" onclick="disconnectProvider('withings')" style="display:none">Desconectar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registrar peso -->
+    <div class="card">
+      <div class="prof-section-title">Registrar peso hoje</div>
       <div class="wrow" style="margin-bottom:8px">
         <input type="number" id="nw" placeholder="Ex: 72.0" step="0.1" min="30" max="300"/>
         <button class="bo" onclick="logWeight()" style="padding:14px 20px">Salvar</button>
       </div>
       <div style="font-size:12px;color:var(--text2)">Pese-se sempre no mesmo horário.</div>
     </div>
+
+    <!-- Evolução de peso -->
     <div class="card">
-      <div class="ctitle" style="font-size:17px;font-weight:700;color:var(--text)">Evolução de peso</div>
+      <div class="prof-section-title">Evolução de peso</div>
       <div class="chart-wrap"><canvas id="wchart"></canvas></div>
     </div>
+
+    <!-- Conta -->
+    <div class="card">
+      <div class="prof-section-title">Conta</div>
+      <div class="prof-row">
+        <span class="prof-row-label">E-mail</span>
+        <span class="prof-row-val" id="prof-email-row" style="font-size:13px;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+      </div>
+      <button class="bo-red" style="width:100%;margin-top:14px;padding:13px;font-size:14px" onclick="logout()">Sair da conta</button>
+    </div>
+
   </div>
 
   <!-- Bottom nav: 4 itens -->
@@ -777,7 +850,7 @@ textarea{resize:none}
       <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="19" cy="11" r="2"/><path d="M23 21v-1a2 2 0 0 0-2-2h-2"/></svg>
       Grupos
     </button>
-    <button class="nav-item" onclick="goTab('perfil',this)">
+    <button class="nav-item" id="nav-perfil" onclick="goTab('perfil',this)">
       <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       Perfil
     </button>
@@ -1080,13 +1153,26 @@ function applyProfile(){
   protGoal=g.prot;carbGoal=g.carb;fatGoal=g.fat;
   document.getElementById('goal-lbl').textContent='/'+calorieGoal+' kcal';
   renderProfileInfo();updateRing();
-  // Show prazo card in profile tab
-  const pc=document.getElementById('prazo-profile-card');
-  if(pc&&profile.prazoMeses){
-    pc.style.display='';
-    document.getElementById('prazo-slider-profile').value=profile.prazoMeses||6;
-    updatePrazoCardProfile();
-  }
+}
+
+function renderProfileTab(){
+  if(!profile)return;
+  // Avatar
+  const initial=(profile.name||'?')[0].toUpperCase();
+  document.getElementById('prof-avatar').textContent=initial;
+  document.getElementById('prof-name-display').textContent=profile.name||'—';
+  const email=currentUser?.email||'';
+  document.getElementById('prof-email-display').textContent=email;
+  document.getElementById('prof-email-row').textContent=email||'—';
+  // Meta rows
+  document.getElementById('prof-weight').textContent=(profile.weight||'—')+' kg';
+  document.getElementById('prof-goal-weight').textContent=(profile.goalWeight||'—')+' kg';
+  document.getElementById('prof-kcal-meta').textContent=(profile.metaKcal||calorieGoal||'—')+' kcal/dia';
+  // Prazo slider
+  const sl=document.getElementById('prazo-slider-profile');
+  if(sl){sl.value=profile.prazoMeses||6;updatePrazoCardProfile();}
+  // Load integrations status (updates p- prefixed elements)
+  loadIntegrations();
 }
 
 function renderProfileInfo(){
@@ -1205,7 +1291,7 @@ function goTab(t,el){
   if(el)el.classList.add('active');
   if(t==='historico')loadHistory();
   if(t==='integracoes')loadIntegrations();
-  if(t==='perfil')setTimeout(renderWChart,60);
+  if(t==='perfil'){renderProfileTab();setTimeout(renderWChart,60);}
 }
 
 function selMethod(m){
@@ -1476,17 +1562,20 @@ function connectGoogle(){const t=getToken();window.location.href='/api/oauth?pro
 function connectWithings(){const t=getToken();window.location.href='/api/oauth?provider=withings&action=start&token='+encodeURIComponent(t);}
 
 function setProviderConnected(provider, connected){
-  const btn=document.getElementById(provider+'-btn');
-  const disc=document.getElementById(provider+'-disc');
-  const status=document.getElementById(provider+'-status');
-  if(connected){
-    if(btn)btn.textContent='Reconectar';
-    if(disc)disc.style.display='';
-    if(status){status.textContent='Conectado ✓';status.className='int-status connected';}
-  }else{
-    if(btn)btn.textContent='Conectar';
-    if(disc)disc.style.display='none';
-    if(status){status.textContent='Não conectado';status.className='int-status';}
+  // Update both the integracoes tab (unprefixed) and the perfil tab (p- prefix)
+  for(const pfx of ['', 'p-']){
+    const btn=document.getElementById(pfx+provider+'-btn');
+    const disc=document.getElementById(pfx+provider+'-disc');
+    const status=document.getElementById(pfx+provider+'-status');
+    if(connected){
+      if(btn)btn.textContent='Reconectar';
+      if(disc)disc.style.display='';
+      if(status){status.textContent='Conectado ✓';status.className='int-status connected';}
+    }else{
+      if(btn)btn.textContent='Conectar';
+      if(disc)disc.style.display='none';
+      if(status){status.textContent='Não conectado';status.className='int-status';}
+    }
   }
 }
 
