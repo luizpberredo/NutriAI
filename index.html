@@ -1293,39 +1293,94 @@ function openEditProfile(){
 }
 
 // ── Today data ─────────────────────────────────────────────────────────────
+function applyDayData(dd){
+  state.meals=normalizeMeals(dd.meals||state.meals);
+  state.weight=dd.weight||null;
+  state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);
+  state.prot=dd.totals?.prot||0;
+  state.carb=dd.totals?.carb||0;
+  state.fat=dd.totals?.fat||0;
+  if(state.weight)document.getElementById('nw').value=state.weight;
+}
+
 async function loadToday(){
   VIEWING_DATE=TODAY;
   const banner=document.getElementById('viewing-date-banner');
   if(banner)banner.style.display='none';
-  // Update meal category display
   const mc=getMealByTime();
   const mcd=document.getElementById('meal-cat-display');
   if(mcd)mcd.textContent='🍽 Refeição: '+mc.name;
+
+  // 1. Show localStorage cache immediately (instant render, no spinner)
+  const cached=loadDayLocal(TODAY);
+  if(cached){applyDayData(cached);renderMeals();updateRing();}
+
+  // 2. Fetch from Redis and update if newer (or if no cache)
   try{
     const d=await apiData({method:'GET',query:{action:'getDay',date:TODAY}});
     if(d.dayData){
-      const dd=d.dayData;
-      state.meals=normalizeMeals(dd.meals||state.meals);
-      state.weight=dd.weight||null;
-      state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);
-      state.prot=dd.totals?.prot||0;
-      state.carb=dd.totals?.carb||0;
-      state.fat=dd.totals?.fat||0;
-      if(state.weight)document.getElementById('nw').value=state.weight;
+      const remote=d.dayData;
+      const localTs=cached?.savedAt||0;
+      const remoteTs=remote.savedAt||0;
+      // Always prefer Redis if it has data — it's the source of truth
+      // Only skip if local is strictly newer (user added meals while offline)
+      if(remoteTs>=localTs||!cached){
+        applyDayData(remote);
+        saveDayLocal(TODAY,remote); // keep cache in sync
+      } else {
+        // Local is newer — push it to Redis so other devices sync
+        console.log('[loadToday] local newer than Redis, re-saving to Redis');
+        saveDayRedis(TODAY,cached);
+      }
+    } else if(!cached){
+      // No data anywhere — fresh day
     }
-  }catch(e){console.warn('loadToday failed:',e);}
+  }catch(e){
+    console.warn('[loadToday] Redis fetch failed, using local cache:',e.message);
+  }
   renderMeals();updateRing();
-  // Compute streak
+
+  // Streak (non-blocking)
   try{
     const ds=await apiData({method:'GET',query:{action:'getDates'}});
     updateStreak(ds.dates||[]);
   }catch(e){}
 }
 
+// ── Day persistence: localStorage cache + Redis source of truth ────────────
+const DAY_CACHE_KEY=date=>`nutriai_day_${date}`;
+
+function saveDayLocal(date,dayData){
+  try{localStorage.setItem(DAY_CACHE_KEY(date),JSON.stringify(dayData));}catch(e){}
+}
+function loadDayLocal(date){
+  try{const s=localStorage.getItem(DAY_CACHE_KEY(date));return s?JSON.parse(s):null;}catch(e){return null;}
+}
+
+async function saveDayRedis(date,dayData,retries=3){
+  for(let i=0;i<retries;i++){
+    try{
+      await apiData({body:{action:'saveDay',date,dayData}});
+      return;
+    }catch(e){
+      console.warn(`saveDay attempt ${i+1} failed:`,e.message);
+      if(i<retries-1)await new Promise(r=>setTimeout(r,600*(i+1)));
+    }
+  }
+  console.error('saveDay failed after '+retries+' attempts — data is in localStorage cache');
+}
+
 async function saveDay(){
-  const dayData={meals:state.meals,weight:state.weight,totals:{kcal:state.kcal,prot:state.prot,carb:state.carb,fat:state.fat}};
-  try{await apiData({body:{action:'saveDay',date:TODAY,dayData}});}
-  catch(e){console.warn('saveDay failed:',e);}
+  const dayData={
+    meals:state.meals,
+    weight:state.weight,
+    totals:{kcal:state.kcal,prot:state.prot,carb:state.carb,fat:state.fat},
+    savedAt:Date.now()
+  };
+  // 1. Save to localStorage immediately (survives closed tab)
+  saveDayLocal(TODAY,dayData);
+  // 2. Persist to Redis with retry (don't await — non-blocking)
+  saveDayRedis(TODAY,dayData);
 }
 
 function updateStreak(dates){
@@ -1368,23 +1423,15 @@ async function loadDayView(date){
   if(date>TODAY)return;
   VIEWING_DATE=date;
   renderWeekDays();
-  // Reset state for the viewed day
-  state={kcal:0,prot:0,carb:0,fat:0,meals:[
-    {name:'Café da manhã',kcal:0,items:[]},
-    {name:'Lanche da manhã',kcal:0,items:[]},
-    {name:'Almoço',kcal:0,items:[]},
-    {name:'Lanche da tarde',kcal:0,items:[]},
-    {name:'Jantar',kcal:0,items:[]},
-    {name:'Ceia',kcal:0,items:[]}
-  ],weight:null};
+  state={kcal:0,prot:0,carb:0,fat:0,meals:freshMeals(),weight:null};
+  // Show cache first
+  const cached=loadDayLocal(date);
+  if(cached){applyDayData(cached);renderMeals();updateRing();}
   try{
     const d=await apiData({method:'GET',query:{action:'getDay',date}});
     if(d.dayData){
-      const dd=d.dayData;
-      state.meals=normalizeMeals(dd.meals||state.meals);
-      state.weight=dd.weight||null;
-      state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);
-      state.prot=dd.totals?.prot||0;state.carb=dd.totals?.carb||0;state.fat=dd.totals?.fat||0;
+      applyDayData(d.dayData);
+      saveDayLocal(date,d.dayData);
     }
   }catch(e){console.warn('loadDayView error:',e);}
   renderMeals();updateRing();
