@@ -31,6 +31,7 @@
 html,body{height:100%;background:var(--bg)}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;color:var(--text);min-height:100vh;padding-bottom:90px;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font-family:inherit}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .app{max-width:430px;margin:0 auto;min-height:100vh}
 .section{display:none;padding:14px 16px 8px}
@@ -44,7 +45,7 @@ button,input,select,textarea{font-family:inherit}
 .streak-badge{display:flex;align-items:center;gap:4px;background:var(--orange-lt);padding:6px 11px;border-radius:20px}
 .streak-num{font-size:14px;font-weight:700;color:var(--orange)}
 .hactions{display:flex;align-items:center;gap:2px}
-.hbtn{background:none;border:none;cursor:pointer;padding:6px;border-radius:10px;color:var(--text2);font-size:16px;line-height:1}
+.hbtn{background:none;border:none;cursor:pointer;padding:11px;border-radius:12px;color:var(--text2);font-size:18px;line-height:1;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 /* Week day selector */
 .week-row{display:flex;align-items:center;gap:4px;padding-bottom:14px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .week-row::-webkit-scrollbar{display:none}
@@ -488,7 +489,7 @@ textarea{resize:none}
           <span style="font-size:14px">🔥</span>
           <span class="streak-num" id="streak-count">0</span>
         </div>
-        <button class="hbtn" onclick="switchTab('integracoes')" title="Integrações">⚙️</button>
+        <button class="hbtn" onclick="goTab('integracoes',document.getElementById('nav-integracoes'))" title="Integrações">⚙️</button>
         <button class="hbtn" onclick="logout()" title="Sair">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
