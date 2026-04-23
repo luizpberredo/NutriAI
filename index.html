@@ -29,12 +29,12 @@
 /* ── Reset ───────────────────────────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:var(--bg)}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;color:var(--text);min-height:100vh;padding-bottom:90px;-webkit-font-smoothing:antialiased}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font-family:inherit}
 button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .app{max-width:430px;margin:0 auto;min-height:100vh}
-.section{display:none;padding:14px 16px 8px}
+.section{display:none;padding:14px 16px calc(90px + env(safe-area-inset-bottom))}
 .section.active{display:block}
 /* ── Header ──────────────────────────────────────────────────────────────── */
 .header{background:var(--white);padding:14px 18px 0;position:sticky;top:0;z-index:20;border-bottom:1px solid var(--border)}
@@ -512,6 +512,9 @@ textarea{resize:none}
   <!-- ── HOJE ──────────────────────────────────────────────────────────────── -->
   <div class="section active" id="tab-hoje">
 
+    <!-- Viewing past day banner -->
+    <div id="viewing-date-banner" style="display:none;background:var(--orange-lt);color:var(--orange);border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:10px;text-align:center"></div>
+
     <!-- Main calorie card -->
     <div class="card cal-card">
       <div class="cal-main-row">
@@ -584,9 +587,6 @@ textarea{resize:none}
         <div class="macro-name">Gordura</div>
       </div>
     </div>
-    <!-- Pagination dots -->
-    <div class="dots-row"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
-
     <!-- Atividades de Hoje (Strava) -->
     <div class="card" id="today-activities-card" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -619,7 +619,7 @@ textarea{resize:none}
     </div>
 
     <div id="panel-foto">
-      <select id="fmsel" style="margin-bottom:12px"><option value="0">Café da manhã</option><option value="1" selected>Almoço</option><option value="2">Lanche</option><option value="3">Jantar</option></select>
+      <div id="meal-cat-display" style="font-size:13px;font-weight:600;color:var(--green-dk);background:var(--green-lt);border-radius:10px;padding:7px 12px;margin-bottom:12px;display:inline-block"></div>
       <input type="file" id="finput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)"/>
       <div class="camera-zone" id="pdrop" onclick="document.getElementById('finput').click()">
         <div class="camera-guide">
@@ -877,6 +877,7 @@ let currentUser=null;
 
 // ── State ──────────────────────────────────────────────────────────────────
 const TODAY=new Date().toISOString().slice(0,10);
+let VIEWING_DATE=TODAY; // date currently shown in dashboard
 let profile=null;
 let calorieGoal=2000;
 let exerciseBurnedToday=0;  // calorias gastas em exercício hoje (Strava + Google Fit)
@@ -986,9 +987,11 @@ async function logout(){
 function resetState(){
   state={kcal:0,prot:0,carb:0,fat:0,meals:[
     {name:'Café da manhã',kcal:0,items:[]},
+    {name:'Lanche da manhã',kcal:0,items:[]},
     {name:'Almoço',kcal:0,items:[]},
-    {name:'Lanche',kcal:0,items:[]},
-    {name:'Jantar',kcal:0,items:[]}
+    {name:'Lanche da tarde',kcal:0,items:[]},
+    {name:'Jantar',kcal:0,items:[]},
+    {name:'Ceia',kcal:0,items:[]}
   ],weight:null};
 }
 
@@ -1239,6 +1242,13 @@ function openEditProfile(){
 
 // ── Today data ─────────────────────────────────────────────────────────────
 async function loadToday(){
+  VIEWING_DATE=TODAY;
+  const banner=document.getElementById('viewing-date-banner');
+  if(banner)banner.style.display='none';
+  // Update meal category display
+  const mc=getMealByTime();
+  const mcd=document.getElementById('meal-cat-display');
+  if(mcd)mcd.textContent='🍽 Refeição: '+mc.name;
   try{
     const d=await apiData({method:'GET',query:{action:'getDay',date:TODAY}});
     if(d.dayData){
@@ -1285,17 +1295,68 @@ function renderWeekDays(){
   const names=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const today=new Date();
   const todayIdx=today.getDay();
-  // Show Mon–Sun of current week
   const monday=new Date(today);
   monday.setDate(today.getDate()-((todayIdx+6)%7));
   container.innerHTML=Array.from({length:7},(_,i)=>{
     const d=new Date(monday);d.setDate(monday.getDate()+i);
-    const isToday=d.toISOString().slice(0,10)===TODAY;
-    return`<div class="day-circle${isToday?' active':''}" onclick="void(0)">
+    const dateStr=d.toISOString().slice(0,10);
+    const isToday=dateStr===TODAY;
+    const isFuture=dateStr>TODAY;
+    const isSelected=dateStr===VIEWING_DATE;
+    const cls='day-circle'+(isSelected?' active':'')+(isFuture?' future':'');
+    const click=isFuture?'':`onclick="loadDayView('${dateStr}')"`;
+    return`<div class="${cls}" ${click} style="${isFuture?'opacity:.3;cursor:not-allowed':'cursor:pointer'}">
       <span class="day-name">${names[d.getDay()]}</span>
       <span class="day-num">${d.getDate()}</span>
     </div>`;
   }).join('');
+}
+
+async function loadDayView(date){
+  if(date>TODAY)return;
+  VIEWING_DATE=date;
+  renderWeekDays();
+  // Reset state for the viewed day
+  state={kcal:0,prot:0,carb:0,fat:0,meals:[
+    {name:'Café da manhã',kcal:0,items:[]},
+    {name:'Lanche da manhã',kcal:0,items:[]},
+    {name:'Almoço',kcal:0,items:[]},
+    {name:'Lanche da tarde',kcal:0,items:[]},
+    {name:'Jantar',kcal:0,items:[]},
+    {name:'Ceia',kcal:0,items:[]}
+  ],weight:null};
+  try{
+    const d=await apiData({method:'GET',query:{action:'getDay',date}});
+    if(d.dayData){
+      const dd=d.dayData;
+      state.meals=dd.meals||state.meals;
+      state.weight=dd.weight||null;
+      state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);
+      state.prot=dd.totals?.prot||0;state.carb=dd.totals?.carb||0;state.fat=dd.totals?.fat||0;
+    }
+  }catch(e){console.warn('loadDayView error:',e);}
+  renderMeals();updateRing();
+  // Show banner if viewing past day
+  const banner=document.getElementById('viewing-date-banner');
+  if(banner){
+    if(date===TODAY){banner.style.display='none';}
+    else{
+      const fmt=new Date(date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+      banner.textContent='📅 Visualizando: '+fmt;
+      banner.style.display='';
+    }
+  }
+}
+
+// ── Meal category by device time ───────────────────────────────────────────
+function getMealByTime(){
+  const h=new Date().getHours();
+  if(h>=5&&h<10) return{idx:0,name:'Café da manhã'};
+  if(h>=10&&h<12)return{idx:1,name:'Lanche da manhã'};
+  if(h>=12&&h<15)return{idx:2,name:'Almoço'};
+  if(h>=15&&h<18)return{idx:3,name:'Lanche da tarde'};
+  if(h>=18&&h<22)return{idx:4,name:'Jantar'};
+  return{idx:5,name:'Ceia'};
 }
 
 // ── Claude API proxy ───────────────────────────────────────────────────────
@@ -1379,6 +1440,7 @@ async function analyzePhoto(b64,mime){
     const ql=p.qualidade==='boa'?'equilibrada':p.qualidade==='razoavel'?'pode melhorar':'atenção';
     out.innerHTML=`
       <div class="analysis-sheet slide-up">
+        <div style="font-size:12px;font-weight:600;color:var(--green-dk);background:var(--green-lt);border-radius:8px;padding:5px 10px;margin-bottom:10px;display:inline-block">🍽 ${getMealByTime().name}</div>
         <div class="air" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px">
           <span>${p.analise} — <strong>${p.totalKcal} kcal</strong></span>
           <span class="badge ${qc}">${ql}</span>
@@ -1396,13 +1458,21 @@ async function analyzePhoto(b64,mime){
 }
 
 window._pItems=[];
-function addFoto(it,btn){addToMeal(it,parseInt(document.getElementById('fmsel').value),curImgUrl);btn.textContent='✓';btn.className='bo cdone';btn.disabled=true;}
+function addFoto(it,btn){
+  const{idx}=getMealByTime();
+  addToMeal(it,idx,curImgUrl);
+  btn.textContent='✓';btn.className='bo cdone';btn.disabled=true;
+  // Check if all items added → go home
+  const remaining=document.querySelectorAll('#foto-out .bo:not(.cdone)');
+  if(remaining.length===0) setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),400);
+}
 function addAllFoto(){
-  const idx=parseInt(document.getElementById('fmsel').value);
+  const{idx}=getMealByTime();
   window._pItems.forEach(it=>addToMeal(it,idx,curImgUrl));
   document.querySelectorAll('#foto-out .bo').forEach(b=>{b.textContent='✓';b.className='bo cdone';b.disabled=true;});
   const ab=document.querySelector('#foto-out .bp');
   if(ab){ab.textContent='✓ Todos adicionados';ab.disabled=true;}
+  setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),500);
 }
 
 // ── Text analysis ──────────────────────────────────────────────────────────
