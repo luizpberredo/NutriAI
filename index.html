@@ -1129,8 +1129,11 @@ async function saveProfile(){
   const weight=parseFloat(document.getElementById('p-weight').value);
   const goalWeight=parseFloat(document.getElementById('p-goal').value);
   const activity=parseFloat(document.getElementById('p-activity').value||selectedActivity);
-  if(!name||!age||!height||!weight||!goalWeight){alert('Preencha todos os campos.');return;}
+  if(!name){obStep=0;showObStep(0);document.getElementById('p-name').focus();return;}
+  if(!age||!height){obStep=1;showObStep(1);return;}
+  if(!weight||!goalWeight){obStep=3;showObStep(3);return;}
   const saveBtn=document.getElementById('btn-ob-save');
+  const isEdit=saveBtn.textContent.includes('Salvar');
   saveBtn.disabled=true;saveBtn.innerHTML='<span class="spinner"></span>Salvando...';
   const prazoMeses=parseInt(document.getElementById('prazo-slider')?.value)||6;
   const prazoData=calcPrazoData(prazoMeses,weight,goalWeight,age,height,selectedSex||'m',activity);
@@ -1140,9 +1143,18 @@ async function saveProfile(){
     await apiData({body:{action:'saveOnboarding'}});
     localStorage.setItem('nutriai_onboarded','1');
     localStorage.setItem('nutriai_profile',JSON.stringify(profile));
-  }catch(e){console.warn('Save profile failed:',e);}
-  saveBtn.disabled=false;saveBtn.textContent='Começar 🍏';
-  applyProfile();showApp();
+    console.log('[saveProfile] saved OK, prazo:',prazoMeses,'meta:',prazoData.meta);
+  }catch(e){
+    console.warn('Save profile failed:',e);
+    saveBtn.disabled=false;
+    saveBtn.textContent=isEdit?'Salvar alterações':'Começar 🍏';
+    alert('Erro ao salvar: '+e.message);
+    return;
+  }
+  saveBtn.disabled=false;saveBtn.textContent=isEdit?'Salvar alterações':'Começar 🍏';
+  applyProfile();
+  showApp();
+  if(!isEdit) loadToday();
 }
 
 function applyProfile(){
