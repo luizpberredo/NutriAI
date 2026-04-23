@@ -358,7 +358,7 @@ textarea{resize:none}
 <div class="overlay" id="auth-overlay">
   <div class="auth-body">
     <div class="auth-logo-area">
-      <span class="auth-logo-icon">🍏</span>
+      <span class="auth-logo-icon">🌿</span>
       <div class="auth-app-name">NutriAI</div>
     </div>
 
@@ -501,7 +501,7 @@ textarea{resize:none}
 
   <div class="ob-footer">
     <button class="ob-next-btn" id="btn-ob-next" onclick="nextObStep()">Continuar</button>
-    <button class="ob-next-btn" id="btn-ob-save" onclick="saveProfile()" style="display:none">Começar 🍏</button>
+    <button class="ob-next-btn" id="btn-ob-save" onclick="saveProfile()" style="display:none">Começar 🌿</button>
   </div>
 </div>
 
@@ -521,7 +521,7 @@ textarea{resize:none}
   <div class="header">
     <div class="hrow1">
       <div class="logo-area">
-        <span class="logo-icon">🍏</span>
+        <span class="logo-icon">🌿</span>
         <span class="logo-text">NutriAI</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -611,7 +611,7 @@ textarea{resize:none}
             <circle id="bf" cx="30" cy="30" r="24" fill="none" stroke="#007AFF" stroke-width="5"
               stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-linecap="round"/>
           </svg>
-          <div class="macro-ring-center">🫐</div>
+          <div class="macro-ring-center">🥑</div>
         </div>
         <div class="macro-val" id="vf">0g</div>
         <div class="macro-name">Gordura</div>
@@ -1201,7 +1201,7 @@ async function saveProfile(){
   localStorage.setItem('nutriai_profile',JSON.stringify(profile));
 
   // ── 2. Navega para o dashboard imediatamente (sempre, mesmo se der erro) ──
-  saveBtn.disabled=false;saveBtn.textContent=isEdit?'Salvar alterações':'Começar 🍏';
+  saveBtn.disabled=false;saveBtn.textContent=isEdit?'Salvar alterações':'Começar 🌿';
   try{applyProfile();}catch(e){console.error('[saveProfile] applyProfile error:',e);}
   try{showApp();}catch(e){console.error('[saveProfile] showApp error:',e);}
   if(!isEdit){try{loadToday();}catch(e){console.error('[saveProfile] loadToday error:',e);}}
@@ -1473,15 +1473,25 @@ function _startPhotoLoading(){
   const ov=document.getElementById('photo-loading-ov');
   const bar=document.getElementById('photo-prog-fill');
   const txt=document.getElementById('photo-loading-txt');
-  ov.style.display='flex';bar.style.width='0%';txt.textContent=msgs[0];
-  let pct=0,mi=0;
+  ov.style.display='flex';bar.style.width='0%';
+  txt.textContent='';txt.style.opacity=1;
+  // Show first phase immediately (no fade to avoid blank start)
+  txt.textContent=msgs[0];
+  let pct=0,mi=0,transitioning=false;
+  function setPhase(idx){
+    transitioning=true;
+    txt.style.opacity=0;
+    setTimeout(()=>{txt.textContent='';txt.textContent=msgs[idx];txt.style.opacity=1;transitioning=false;},200);
+  }
   _photoTimer=setInterval(()=>{
     if(pct<85){
       pct+=pct<30?2.5:pct<60?1.2:0.4;
       bar.style.width=pct.toFixed(1)+'%';
-      if(pct>22&&mi===0){mi=1;txt.style.opacity=0;setTimeout(()=>{txt.textContent=msgs[1];txt.style.opacity=1;},200);}
-      else if(pct>48&&mi===1){mi=2;txt.style.opacity=0;setTimeout(()=>{txt.textContent=msgs[2];txt.style.opacity=1;},200);}
-      else if(pct>72&&mi===2){mi=3;txt.style.opacity=0;setTimeout(()=>{txt.textContent=msgs[3];txt.style.opacity=1;},200);}
+      if(!transitioning){
+        if(pct>22&&mi===0){mi=1;setPhase(1);}
+        else if(pct>48&&mi===1){mi=2;setPhase(2);}
+        else if(pct>72&&mi===2){mi=3;setPhase(3);}
+      }
     }
   },120);
 }
