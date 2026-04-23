@@ -1,5 +1,6 @@
 export default function handler(req, res) {
   const clientId = process.env.WITHINGS_CLIENT_ID;
+  const sessionToken = req.query.token || '';
   const host = req.headers.host;
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const redirectUri = `${protocol}://${host}/api/auth-withings-callback`;
@@ -9,7 +10,7 @@ export default function handler(req, res) {
   url.searchParams.set('client_id', clientId);
   url.searchParams.set('redirect_uri', redirectUri);
   url.searchParams.set('scope', 'user.metrics');
-  url.searchParams.set('state', 'nutriai');
+  url.searchParams.set('state', `nutriai|${sessionToken}`);
 
   res.redirect(302, url.toString());
 }

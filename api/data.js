@@ -1,9 +1,20 @@
 import { Redis } from '@upstash/redis';
 
 const kv = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
 });
+
+async function resolveUserId(token) {
+  if (!token) return null;
+  const session = await kv.get(`session:${token}`);
+  if (!session) return null;
+  if (new Date(session.expiresAt) < new Date()) {
+    await kv.del(`session:${token}`);
+    return null;
+  }
+  return session.userId;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,12 +22,21 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { userId, date, action } = req.method === 'GET' ? req.query : req.body;
-  if (!userId) return res.status(400).json({ error: 'userId required' });
+  const params = req.method === 'GET' ? req.query : req.body;
+  const { action, date } = params;
+  const token = params.token;
+
+  let userId;
+  try {
+    userId = await resolveUserId(token);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    if (action === 'saveProfile' || req.method === 'POST' && req.body.profile) {
-      const { profile } = req.body;
+    if (action === 'saveProfile') {
+      const { profile } = params;
       await kv.set(`profile:${userId}`, profile);
       return res.status(200).json({ ok: true });
     }
@@ -27,9 +47,8 @@ export default async function handler(req, res) {
     }
 
     if (action === 'saveDay') {
-      const { dayData } = req.body;
+      const { dayData } = params;
       await kv.set(`day:${userId}:${date}`, dayData);
-      // keep index of dates
       const idx = await kv.get(`dates:${userId}`);
       const dates = idx ?? [];
       if (!dates.includes(date)) { dates.push(date); dates.sort().reverse(); }

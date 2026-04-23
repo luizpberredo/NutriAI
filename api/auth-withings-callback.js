@@ -5,14 +5,21 @@ const kv = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-const USER_ID = 'user_001';
+async function resolveUserId(token) {
+  if (!token) return null;
+  const session = await kv.get(`session:${token}`);
+  if (!session || new Date(session.expiresAt) < new Date()) return null;
+  return session.userId;
+}
 
 export default async function handler(req, res) {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
+  const [, sessionToken] = (state || '').split('|');
 
-  if (error || !code) {
-    return res.redirect(302, '/?error=withings_denied');
-  }
+  if (error || !code) return res.redirect(302, '/?error=withings_denied');
+
+  const userId = await resolveUserId(sessionToken);
+  if (!userId) return res.redirect(302, '/?error=withings_auth&msg=invalid_session');
 
   const host = req.headers.host;
   const protocol = host.includes('localhost') ? 'http' : 'https';
@@ -33,13 +40,12 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
     });
-
     if (!r.ok) throw new Error(`Withings token exchange failed: ${r.status}`);
     const json = await r.json();
     if (json.status !== 0) throw new Error(`Withings error: ${json.error}`);
 
     const tokens = json.body;
-    await kv.set(`withings_tokens:${USER_ID}`, {
+    await kv.set(`withings_tokens:${userId}`, {
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
       expires_in: tokens.expires_in,

@@ -1,6 +1,7 @@
 export default function handler(req, res) {
   const clientId = process.env.STRAVA_CLIENT_ID;
   console.log('[auth-strava] STRAVA_CLIENT_ID:', clientId ? `set (${clientId.length} chars)` : 'UNDEFINED');
+  const sessionToken = req.query.token || '';
   const host = req.headers.host;
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const redirectUri = `${protocol}://${host}/api/auth-strava-callback`;
@@ -11,6 +12,7 @@ export default function handler(req, res) {
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('approval_prompt', 'auto');
   url.searchParams.set('scope', 'activity:read_all');
+  url.searchParams.set('state', `nutriai|${sessionToken}`);
 
   res.redirect(302, url.toString());
 }

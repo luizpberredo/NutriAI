@@ -1,5 +1,6 @@
 export default function handler(req, res) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
+  const sessionToken = req.query.token || '';
   const host = req.headers.host;
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const redirectUri = `${protocol}://${host}/api/auth-google-callback`;
@@ -14,6 +15,7 @@ export default function handler(req, res) {
     'https://www.googleapis.com/auth/fitness.activity.read',
     'https://www.googleapis.com/auth/fitness.body.read',
   ].join(' '));
+  url.searchParams.set('state', `nutriai|${sessionToken}`);
 
   res.redirect(302, url.toString());
 }

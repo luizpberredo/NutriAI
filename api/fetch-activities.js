@@ -5,9 +5,14 @@ const kv = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-const USER_ID = 'user_001';
+async function resolveUserId(token) {
+  if (!token) return null;
+  const session = await kv.get(`session:${token}`);
+  if (!session || new Date(session.expiresAt) < new Date()) return null;
+  return session.userId;
+}
 
-async function refreshStravaToken(tokens) {
+async function refreshStravaToken(tokens, userId) {
   if (tokens.expires_at > Math.floor(Date.now() / 1000) + 60) return tokens;
   const r = await fetch('https://www.strava.com/oauth/token', {
     method: 'POST',
@@ -22,11 +27,11 @@ async function refreshStravaToken(tokens) {
   if (!r.ok) throw new Error('Strava token refresh failed');
   const fresh = await r.json();
   const updated = { ...tokens, access_token: fresh.access_token, refresh_token: fresh.refresh_token, expires_at: fresh.expires_at };
-  await kv.set(`strava_tokens:${USER_ID}`, updated);
+  await kv.set(`strava_tokens:${userId}`, updated);
   return updated;
 }
 
-async function refreshGoogleToken(tokens) {
+async function refreshGoogleToken(tokens, userId) {
   const age = Math.floor(Date.now() / 1000) - tokens.issued_at;
   if (age < tokens.expires_in - 60) return tokens;
   const r = await fetch('https://oauth2.googleapis.com/token', {
@@ -42,22 +47,26 @@ async function refreshGoogleToken(tokens) {
   if (!r.ok) throw new Error('Google token refresh failed');
   const fresh = await r.json();
   const updated = { ...tokens, access_token: fresh.access_token, issued_at: Math.floor(Date.now() / 1000), expires_in: fresh.expires_in };
-  await kv.set(`google_tokens:${USER_ID}`, updated);
+  await kv.set(`google_tokens:${userId}`, updated);
   return updated;
 }
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const userId = await resolveUserId(req.query.token);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   const result = { strava: null, google: null, errors: {} };
 
   // ── Strava: last 7 days ──────────────────────────────────────────────────
   try {
-    let tokens = await kv.get(`strava_tokens:${USER_ID}`);
+    let tokens = await kv.get(`strava_tokens:${userId}`);
     if (!tokens) throw new Error('not_connected');
-    tokens = await refreshStravaToken(tokens);
+    tokens = await refreshStravaToken(tokens, userId);
 
     const after = Math.floor((Date.now() - 7 * 86400 * 1000) / 1000);
     const r = await fetch(`https://www.strava.com/api/v3/athlete/activities?after=${after}&per_page=30`, {
@@ -82,9 +91,9 @@ export default async function handler(req, res) {
 
   // ── Google Fit: steps + calories burned today ────────────────────────────
   try {
-    let tokens = await kv.get(`google_tokens:${USER_ID}`);
+    let tokens = await kv.get(`google_tokens:${userId}`);
     if (!tokens) throw new Error('not_connected');
-    tokens = await refreshGoogleToken(tokens);
+    tokens = await refreshGoogleToken(tokens, userId);
 
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);

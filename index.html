@@ -84,7 +84,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .dico{font-size:36px;margin-bottom:10px}
 .dtitle{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
 .dsub{font-size:12px;color:var(--text3)}
-input[type=text],input[type=number],textarea,select{width:100%;padding:12px 14px;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:15px;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;outline:none;transition:border-color .15s}
+input[type=text],input[type=number],input[type=email],input[type=password],textarea,select{width:100%;padding:12px 14px;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:15px;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;outline:none;transition:border-color .15s}
 input:focus,textarea:focus,select:focus{border-color:var(--green)}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
 .bp{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
@@ -117,17 +117,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .hist-kcal{font-size:14px;font-weight:700;color:var(--green)}
 .hist-detail{display:none;padding:12px 0 4px;border-bottom:0.5px solid var(--border)}
 .hist-detail.open{display:block}
-/* Profile overlay */
-.overlay{position:fixed;inset:0;background:var(--bg);z-index:100;overflow-y:auto;padding:32px 20px 48px;display:flex;flex-direction:column;align-items:stretch;max-width:430px;margin:0 auto}
-.ologo{font-size:52px;text-align:center;margin-bottom:10px}
-.otitle{font-size:24px;font-weight:800;color:var(--text);text-align:center;margin-bottom:6px}
-.osub{font-size:14px;color:var(--text3);text-align:center;margin-bottom:28px;line-height:1.5}
-.flabel{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
-.fgroup{margin-bottom:14px}
-.srow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.radio-group{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.rbtn{display:flex;align-items:center;justify-content:center;padding:12px;border:1.5px solid var(--border2);border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:600;color:var(--text);background:var(--bg);transition:all .15s;user-select:none}
-.rbtn.sel{border-color:var(--green);background:var(--green-light);color:var(--green-dark)}
 /* Integrations */
 .int-provider{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--border)}
 .int-provider:last-child{border-bottom:none}
@@ -149,6 +138,22 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .balance-net{font-size:16px;font-weight:800}
 .balance-net.surplus{color:var(--pink)}
 .balance-net.deficit{color:var(--green)}
+/* Overlays */
+.overlay{position:fixed;inset:0;background:var(--bg);z-index:100;overflow-y:auto;padding:32px 20px 48px;display:flex;flex-direction:column;align-items:stretch;max-width:430px;margin:0 auto}
+.ologo{font-size:52px;text-align:center;margin-bottom:10px}
+.otitle{font-size:24px;font-weight:800;color:var(--text);text-align:center;margin-bottom:6px}
+.osub{font-size:14px;color:var(--text3);text-align:center;margin-bottom:28px;line-height:1.5}
+.flabel{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
+.fgroup{margin-bottom:14px}
+.srow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.radio-group{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rbtn{display:flex;align-items:center;justify-content:center;padding:12px;border:1.5px solid var(--border2);border-radius:var(--rs);cursor:pointer;font-size:13px;font-weight:600;color:var(--text);background:var(--bg);transition:all .15s;user-select:none}
+.rbtn.sel{border-color:var(--green);background:var(--green-light);color:var(--green-dark)}
+/* Auth tabs */
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;border:0.5px solid var(--border2);border-radius:var(--rs);overflow:hidden;margin-bottom:24px}
+.auth-tab{padding:11px;background:var(--bg2);border:none;font-size:14px;font-weight:600;color:var(--text3);cursor:pointer;font-family:inherit;transition:all .15s}
+.auth-tab.sel{background:var(--green);color:#fff}
+.auth-err{color:var(--dtxt);font-size:13px;margin-bottom:10px;padding:8px 10px;background:var(--dbg);border-radius:var(--rs);display:none}
 /* Profile tab */
 .pinfo-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);font-size:14px}
 .pinfo-row:last-child{border-bottom:none}
@@ -158,7 +163,33 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </head>
 <body>
 
-<!-- Profile Setup Overlay (hidden by default — shown only when needed) -->
+<!-- Auth Overlay -->
+<div class="overlay" id="auth-overlay">
+  <div class="ologo">🥗</div>
+  <div class="otitle">NutriAI</div>
+  <div class="osub">Seu assistente nutricional inteligente</div>
+  <div class="auth-tabs">
+    <button class="auth-tab sel" id="abtl" onclick="showAuthTab('login')">Entrar</button>
+    <button class="auth-tab" id="abtr" onclick="showAuthTab('register')">Criar conta</button>
+  </div>
+  <!-- Login -->
+  <div id="auth-login-form">
+    <div class="fgroup"><label class="flabel">E-mail</label><input type="email" id="l-email" placeholder="seu@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="fgroup"><label class="flabel">Senha</label><input type="password" id="l-pass" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="auth-err" id="l-err"></div>
+    <button class="bp" id="l-btn" onclick="doLogin()">Entrar</button>
+  </div>
+  <!-- Register -->
+  <div id="auth-register-form" style="display:none">
+    <div class="fgroup"><label class="flabel">Nome</label><input type="text" id="r-name" placeholder="Seu nome" autocomplete="name"/></div>
+    <div class="fgroup"><label class="flabel">E-mail</label><input type="email" id="r-email" placeholder="seu@email.com" autocomplete="email"/></div>
+    <div class="fgroup"><label class="flabel">Senha</label><input type="password" id="r-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
+    <div class="auth-err" id="r-err"></div>
+    <button class="bp" id="r-btn" onclick="doRegister()">Criar conta</button>
+  </div>
+</div>
+
+<!-- Profile Setup Overlay (hidden by default) -->
 <div class="overlay" id="profile-overlay" style="display:none">
   <div class="ologo">🥗</div>
   <div class="otitle">Bem-vindo ao NutriAI</div>
@@ -212,9 +243,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="header">
     <div class="hrow">
       <div><h1 id="hname">NutriAI</h1><div class="hsub">Assistente nutricional inteligente</div></div>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:6px">
         <div class="hdate" id="hdate"></div>
         <button onclick="openEditProfile()" title="Editar perfil" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--text3);line-height:1">⚙️</button>
+        <button onclick="logout()" title="Sair" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--text3);line-height:1">🚪</button>
       </div>
     </div>
   </div>
@@ -263,7 +295,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </button>
       </div>
     </div>
-
     <div id="panel-foto">
       <div class="card">
         <div class="ctitle" style="margin-bottom:4px">Foto da refeição</div>
@@ -283,7 +314,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div id="foto-out"></div>
       </div>
     </div>
-
     <div id="panel-texto" style="display:none">
       <div class="card">
         <div class="ctitle" style="margin-bottom:4px">Descreva o que comeu</div>
@@ -332,32 +362,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
-  <!-- PERFIL -->
-  <div class="section" id="tab-perfil">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <span class="ctitle" style="margin:0">Meu perfil</span>
-        <button class="bo" onclick="openEditProfile()">Editar</button>
-      </div>
-      <div id="profile-info"></div>
-    </div>
-    <div class="card">
-      <div class="ctitle">Registrar peso hoje</div>
-      <div class="wrow">
-        <input type="number" id="nw" placeholder="Ex: 72.0" step="0.1" min="30" max="300"/>
-        <button class="bo" onclick="logWeight()" style="padding:12px 20px">Salvar</button>
-      </div>
-      <div style="font-size:12px;color:var(--text3)">Pese-se sempre no mesmo horário.</div>
-    </div>
-    <div class="card">
-      <div class="ctitle">Evolução de peso</div>
-      <div class="chart-wrap"><canvas id="wchart"></canvas></div>
-    </div>
-  </div>
-
   <!-- INTEGRAÇÕES -->
   <div class="section" id="tab-integracoes">
-    <!-- Dashboard de métricas -->
     <div class="card" id="int-dashboard" style="display:none">
       <div class="ctitle">Resumo de hoje</div>
       <div class="metric-grid">
@@ -382,49 +388,32 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
       </div>
     </div>
-
-    <!-- Último peso Withings -->
     <div class="card" id="int-weight-card" style="display:none">
       <div class="ctitle">Última medição — Withings</div>
       <div id="int-weight-data"></div>
     </div>
-
-    <!-- Provedores -->
     <div class="card">
       <div class="ctitle">Conectar dispositivos</div>
       <div class="int-provider">
         <div class="int-logo" style="background:#FC4C02">🏃</div>
-        <div class="int-info">
-          <div class="int-name">Strava</div>
-          <div class="int-status" id="strava-status">Não conectado</div>
-        </div>
+        <div class="int-info"><div class="int-name">Strava</div><div class="int-status" id="strava-status">Não conectado</div></div>
         <button class="bo" id="strava-btn" onclick="connectStrava()">Conectar</button>
       </div>
       <div class="int-provider">
         <div class="int-logo" style="background:#4285F4">🏋️</div>
-        <div class="int-info">
-          <div class="int-name">Google Fit</div>
-          <div class="int-status" id="google-status">Não conectado</div>
-        </div>
+        <div class="int-info"><div class="int-name">Google Fit</div><div class="int-status" id="google-status">Não conectado</div></div>
         <button class="bo" id="google-btn" onclick="connectGoogle()">Conectar</button>
       </div>
       <div class="int-provider">
         <div class="int-logo" style="background:#00B5AD">⚖️</div>
-        <div class="int-info">
-          <div class="int-name">Withings</div>
-          <div class="int-status" id="withings-status">Não conectado</div>
-        </div>
+        <div class="int-info"><div class="int-name">Withings</div><div class="int-status" id="withings-status">Não conectado</div></div>
         <button class="bo" id="withings-btn" onclick="connectWithings()">Conectar</button>
       </div>
     </div>
-
-    <!-- Atividades Strava -->
     <div class="card" id="strava-activities-card" style="display:none">
       <div class="ctitle">Atividades — últimos 7 dias</div>
       <div id="strava-activities-list"></div>
     </div>
-
-    <!-- Peso manual -->
     <div class="card">
       <div class="ctitle">Registrar peso manualmente</div>
       <div class="csub">Para quem não tem Withings</div>
@@ -432,6 +421,29 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <input type="number" id="int-weight-input" placeholder="Ex: 72.0" step="0.1" min="30" max="300"/>
         <button class="bo" onclick="logWeightManual()" style="padding:12px 20px">Salvar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- PERFIL -->
+  <div class="section" id="tab-perfil">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span class="ctitle" style="margin:0">Meu perfil</span>
+        <button class="bo" onclick="openEditProfile()">Editar</button>
+      </div>
+      <div id="profile-info"></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Registrar peso hoje</div>
+      <div class="wrow">
+        <input type="number" id="nw" placeholder="Ex: 72.0" step="0.1" min="30" max="300"/>
+        <button class="bo" onclick="logWeight()" style="padding:12px 20px">Salvar</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3)">Pese-se sempre no mesmo horário.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Evolução de peso</div>
+      <div class="chart-wrap"><canvas id="wchart"></canvas></div>
     </div>
   </div>
 
@@ -446,19 +458,22 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
-// ── User identity ──────────────────────────────────────────────────────────
-function getUid(){
-  let id=localStorage.getItem('nutriai_uid');
-  if(!id){id=crypto.randomUUID();localStorage.setItem('nutriai_uid',id);}
-  return id;
+// ── Auth ───────────────────────────────────────────────────────────────────
+const TOKEN_KEY='nutriai_token';
+function getToken(){return localStorage.getItem(TOKEN_KEY);}
+function setToken(t){localStorage.setItem(TOKEN_KEY,t);}
+function clearAuth(){
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('nutriai_onboarded');
+  localStorage.removeItem('nutriai_profile');
 }
-const UID=getUid();
+let currentUser=null; // {userId, email, name}
 
 // ── State ──────────────────────────────────────────────────────────────────
 const TODAY=new Date().toISOString().slice(0,10);
 let profile=null;
 let calorieGoal=2000;
-let protGoal=150, carbGoal=225, fatGoal=60;
+let protGoal=150,carbGoal=225,fatGoal=60;
 let state={
   kcal:0,prot:0,carb:0,fat:0,
   meals:[
@@ -472,24 +487,143 @@ let state={
 let curImg=null,curImgUrl=null,wChart=null;
 
 // ── API helpers ────────────────────────────────────────────────────────────
+function handleUnauth(){
+  clearAuth();currentUser=null;profile=null;
+  resetState();
+  showAuthOverlay();
+}
+
 async function apiData(params){
+  const token=getToken();
   const isGet=params.method==='GET';
+  const query={...(params.query||{})};
+  const body={...(params.body||{})};
+  // Inject token; strip any legacy userId fields
+  if(token){if(isGet)query.token=token;else body.token=token;}
+  delete query.userId;delete body.userId;
+
   if(isGet){
-    const qs=new URLSearchParams(params.query).toString();
-    const r=await fetch('/api/data?'+qs);
+    const r=await fetch('/api/data?'+new URLSearchParams(query));
+    if(r.status===401){handleUnauth();throw new Error('Unauthorized');}
     if(!r.ok)throw new Error('HTTP '+r.status);
     return r.json();
   }
-  const r=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params.body)});
+  const r=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.status===401){handleUnauth();throw new Error('Unauthorized');}
   if(!r.ok)throw new Error('HTTP '+r.status);
   return r.json();
 }
 
-// ── Calorie goal calculation (Mifflin-St Jeor) ────────────────────────────
+// ── Auth UI ────────────────────────────────────────────────────────────────
+function showAuthOverlay(){
+  document.getElementById('auth-overlay').style.display='';
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('profile-overlay').style.display='none';
+}
+function showApp(){
+  document.getElementById('auth-overlay').style.display='none';
+  document.getElementById('profile-overlay').style.display='none';
+  document.getElementById('main-app').style.display='';
+}
+function showOnboarding(){
+  document.getElementById('auth-overlay').style.display='none';
+  document.getElementById('profile-overlay').style.display='';
+  document.getElementById('main-app').style.display='none';
+}
+
+function showAuthTab(tab){
+  document.getElementById('auth-login-form').style.display=tab==='login'?'':'none';
+  document.getElementById('auth-register-form').style.display=tab==='register'?'':'none';
+  document.getElementById('abtl').classList.toggle('sel',tab==='login');
+  document.getElementById('abtr').classList.toggle('sel',tab==='register');
+}
+
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const btn=document.getElementById('l-btn');
+  const errEl=document.getElementById('l-err');
+  errEl.style.display='none';
+  if(!email||!pass){errEl.textContent='Preencha e-mail e senha.';errEl.style.display='';return;}
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Entrando...';
+  try{
+    const r=await fetch('/api/auth-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Erro ao entrar');
+    setToken(d.token);
+    currentUser={userId:d.userId,email:d.email,name:d.name};
+    document.getElementById('auth-overlay').style.display='none';
+    await postAuthInit();
+  }catch(e){errEl.textContent=e.message;errEl.style.display='';}
+  btn.disabled=false;btn.textContent='Entrar';
+}
+
+async function doRegister(){
+  const name=document.getElementById('r-name').value.trim();
+  const email=document.getElementById('r-email').value.trim();
+  const pass=document.getElementById('r-pass').value;
+  const btn=document.getElementById('r-btn');
+  const errEl=document.getElementById('r-err');
+  errEl.style.display='none';
+  if(!name||!email||!pass){errEl.textContent='Preencha todos os campos.';errEl.style.display='';return;}
+  if(pass.length<6){errEl.textContent='Senha deve ter no mínimo 6 caracteres.';errEl.style.display='';return;}
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Criando conta...';
+  try{
+    const r=await fetch('/api/auth-register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pass})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Erro ao criar conta');
+    setToken(d.token);
+    currentUser={userId:d.userId,email:d.email,name:d.name};
+    document.getElementById('auth-overlay').style.display='none';
+    await postAuthInit();
+  }catch(e){errEl.textContent=e.message;errEl.style.display='';}
+  btn.disabled=false;btn.textContent='Criar conta';
+}
+
+async function logout(){
+  const token=getToken();
+  try{await fetch('/api/auth-logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});}catch(e){}
+  clearAuth();currentUser=null;profile=null;
+  resetState();
+  showAuthOverlay();
+}
+
+function resetState(){
+  state={kcal:0,prot:0,carb:0,fat:0,meals:[
+    {name:'Café da manhã',kcal:0,items:[]},
+    {name:'Almoço',kcal:0,items:[]},
+    {name:'Lanche',kcal:0,items:[]},
+    {name:'Jantar',kcal:0,items:[]}
+  ],weight:null};
+}
+
+async function postAuthInit(){
+  // Pre-fill name from registration/login
+  if(currentUser?.name)document.getElementById('p-name').value=currentUser.name;
+  try{
+    const ob=await apiData({method:'GET',query:{action:'getOnboarding'}});
+    if(ob.onboarding){
+      const d=await apiData({method:'GET',query:{action:'getProfile'}});
+      if(d.profile){
+        profile=d.profile;
+        localStorage.setItem('nutriai_profile',JSON.stringify(profile));
+        localStorage.setItem('nutriai_onboarded','1');
+        applyProfile();
+      }
+      showApp();
+      await loadToday();
+    }else{
+      showOnboarding();
+    }
+  }catch(e){
+    console.warn('postAuthInit error:',e);
+    if(e.message!=='Unauthorized')showOnboarding();
+  }
+}
+
+// ── Calorie goal (Mifflin-St Jeor) ────────────────────────────────────────
 function calcGoal(p){
-  const bmr=p.sex==='m'
-    ?(10*p.weight+6.25*p.height-5*p.age+5)
-    :(10*p.weight+6.25*p.height-5*p.age-161);
+  const bmr=p.sex==='m'?(10*p.weight+6.25*p.height-5*p.age+5):(10*p.weight+6.25*p.height-5*p.age-161);
   const tdee=bmr*p.activity;
   const goal=p.goalWeight<p.weight?Math.round(tdee*0.8):p.goalWeight>p.weight?Math.round(tdee*1.1):Math.round(tdee);
   const prot=Math.round(p.weight*1.8);
@@ -518,15 +652,14 @@ async function saveProfile(){
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Salvando...';
   profile={name,age,sex:selectedSex,height,weight,goalWeight,activity};
   try{
-    await apiData({body:{action:'saveProfile',userId:UID,profile}});
-    await apiData({body:{action:'saveOnboarding',userId:'user_001'}});
+    await apiData({body:{action:'saveProfile',profile}});
+    await apiData({body:{action:'saveOnboarding'}});
     localStorage.setItem('nutriai_onboarded','1');
     localStorage.setItem('nutriai_profile',JSON.stringify(profile));
   }catch(e){console.warn('Save profile failed:',e);}
   btn.disabled=false;btn.textContent='Começar';
   applyProfile();
-  document.getElementById('profile-overlay').style.display='none';
-  document.getElementById('main-app').style.display='';
+  showApp();
 }
 
 function applyProfile(){
@@ -543,8 +676,10 @@ function renderProfileInfo(){
   if(!profile)return;
   const actLabels={'1.2':'Sedentário','1.375':'Levemente ativo','1.55':'Moderadamente ativo','1.725':'Muito ativo','1.9':'Extremamente ativo'};
   const g=calcGoal(profile);
+  const email=currentUser?.email||'';
   document.getElementById('profile-info').innerHTML=[
     ['Nome',profile.name],
+    email?['E-mail',email]:[],
     ['Idade',profile.age+' anos'],
     ['Sexo',profile.sex==='m'?'Masculino':'Feminino'],
     ['Altura',profile.height+' cm'],
@@ -552,7 +687,7 @@ function renderProfileInfo(){
     ['Meta de peso',profile.goalWeight+' kg'],
     ['Atividade',actLabels[String(profile.activity)]||'—'],
     ['Meta calórica',g.kcal+' kcal/dia'],
-  ].map(([l,v])=>`<div class="pinfo-row"><span class="pinfo-label">${l}</span><span class="pinfo-val">${v}</span></div>`).join('');
+  ].filter(r=>r.length).map(([l,v])=>`<div class="pinfo-row"><span class="pinfo-label">${l}</span><span class="pinfo-val">${v}</span></div>`).join('');
 }
 
 function openEditProfile(){
@@ -565,13 +700,13 @@ function openEditProfile(){
   document.getElementById('p-activity').value=profile.activity;
   selSex(profile.sex);
   document.getElementById('btn-start').textContent='Salvar alterações';
-  document.getElementById('profile-overlay').style.display='';
+  showOnboarding();
 }
 
 // ── Today data ─────────────────────────────────────────────────────────────
 async function loadToday(){
   try{
-    const d=await apiData({method:'GET',query:{action:'getDay',userId:UID,date:TODAY}});
+    const d=await apiData({method:'GET',query:{action:'getDay',date:TODAY}});
     if(d.dayData){
       const dd=d.dayData;
       state.meals=dd.meals||state.meals;
@@ -580,22 +715,16 @@ async function loadToday(){
       state.prot=dd.totals?.prot||0;
       state.carb=dd.totals?.carb||0;
       state.fat=dd.totals?.fat||0;
-      if(state.weight){document.getElementById('nw').value=state.weight;}
+      if(state.weight)document.getElementById('nw').value=state.weight;
     }
   }catch(e){console.warn('loadToday failed:',e);}
-  renderMeals();
-  updateRing();
+  renderMeals();updateRing();
 }
 
 async function saveDay(){
-  const dayData={
-    meals:state.meals,
-    weight:state.weight,
-    totals:{kcal:state.kcal,prot:state.prot,carb:state.carb,fat:state.fat}
-  };
-  try{
-    await apiData({body:{action:'saveDay',userId:UID,date:TODAY,dayData}});
-  }catch(e){console.warn('saveDay failed:',e);}
+  const dayData={meals:state.meals,weight:state.weight,totals:{kcal:state.kcal,prot:state.prot,carb:state.carb,fat:state.fat}};
+  try{await apiData({body:{action:'saveDay',date:TODAY,dayData}});}
+  catch(e){console.warn('saveDay failed:',e);}
 }
 
 // ── Claude API proxy ───────────────────────────────────────────────────────
@@ -617,7 +746,6 @@ function goTab(t,el){
   if(t==='perfil')setTimeout(renderWChart,60);
 }
 
-// ── Register method selector ───────────────────────────────────────────────
 function selMethod(m){
   document.getElementById('btn-foto').classList.toggle('sel',m==='foto');
   document.getElementById('btn-texto').classList.toggle('sel',m==='texto');
@@ -674,10 +802,7 @@ async function analyzePhoto(b64,mime){
 }
 
 window._pItems=[];
-function addFoto(it,btn){
-  addToMeal(it,parseInt(document.getElementById('fmsel').value),curImgUrl);
-  btn.textContent='✓';btn.className='bo cdone';btn.disabled=true;
-}
+function addFoto(it,btn){addToMeal(it,parseInt(document.getElementById('fmsel').value),curImgUrl);btn.textContent='✓';btn.className='bo cdone';btn.disabled=true;}
 function addAllFoto(){
   const idx=parseInt(document.getElementById('fmsel').value);
   window._pItems.forEach(it=>addToMeal(it,idx,curImgUrl));
@@ -688,8 +813,7 @@ function addAllFoto(){
 
 // ── Text analysis ──────────────────────────────────────────────────────────
 async function analyzeText(){
-  const desc=document.getElementById('fdesc').value.trim();
-  if(!desc)return;
+  const desc=document.getElementById('fdesc').value.trim();if(!desc)return;
   const btn=document.getElementById('btn-analisar');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Analisando...';
   const out=document.getElementById('texto-out');
@@ -710,9 +834,7 @@ async function analyzeText(){
             <button class="bo" onclick='addTxt(${JSON.stringify(it)},${idx},this)' style="font-size:12px;padding:6px 10px">+ Add</button>
           </div>`).join('')}
       </div>`;
-  }catch(e){
-    out.innerHTML=`<div class="air loading">Erro ao analisar. (${e.message})</div>`;
-  }
+  }catch(e){out.innerHTML=`<div class="air loading">Erro ao analisar. (${e.message})</div>`;}
   btn.disabled=false;btn.textContent='Analisar com IA';
 }
 function addTxt(it,idx,btn){addToMeal(it,idx,null);btn.textContent='✓';btn.className='bo cdone';btn.disabled=true;}
@@ -777,29 +899,19 @@ function updateRing(){
 async function logWeight(){
   const v=parseFloat(document.getElementById('nw').value);
   if(!v||v<30||v>300)return;
-  state.weight=v;
-  await saveDay();
-  renderWChart();
-  document.getElementById('nw').value='';
+  state.weight=v;await saveDay();renderWChart();document.getElementById('nw').value='';
 }
 
 async function renderWChart(){
   let allDays={};
-  try{
-    const d=await apiData({method:'GET',query:{action:'getAllDays',userId:UID}});
-    allDays=d.days||{};
-  }catch(e){console.warn('renderWChart failed:',e);}
+  try{const d=await apiData({method:'GET',query:{action:'getAllDays'}});allDays=d.days||{};}
+  catch(e){console.warn('renderWChart failed:',e);}
   const sorted=Object.keys(allDays).sort();
   const weights=sorted.map(d=>allDays[d]?.weight).filter(Boolean);
-  const labels=sorted.filter(d=>allDays[d]?.weight).map(d=>{
-    const [,m,dd]=d.split('-');return dd+'/'+m;
-  });
+  const labels=sorted.filter(d=>allDays[d]?.weight).map(d=>{const[,m,dd]=d.split('-');return dd+'/'+m;});
   const ctx=document.getElementById('wchart').getContext('2d');
   if(wChart)wChart.destroy();
-  if(!weights.length){
-    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
-    return;
-  }
+  if(!weights.length){ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);return;}
   wChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{data:weights,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.1)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#1D9E75',fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.raw.toFixed(1)+' kg'}}},scales:{x:{grid:{color:'rgba(128,128,128,0.08)'},ticks:{font:{size:10},maxTicksLimit:7}},y:{grid:{color:'rgba(128,128,128,0.08)'},ticks:{font:{size:10},callback:v=>v.toFixed(1)},min:Math.min(...weights)-.5,max:Math.max(...weights)+.5}}}});
 }
 
@@ -808,13 +920,12 @@ async function loadHistory(){
   const list=document.getElementById('hist-list');
   list.innerHTML='<div class="air loading" style="text-align:center"><span class="spinner dark"></span>Carregando histórico...</div>';
   try{
-    const d=await apiData({method:'GET',query:{action:'getAllDays',userId:UID}});
+    const d=await apiData({method:'GET',query:{action:'getAllDays'}});
     const days=d.days||{};
     const dates=Object.keys(days).sort().reverse();
     if(!dates.length){
       list.innerHTML=`<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-txt">Nenhum histórico ainda</div><div class="empty-sub">Registre suas refeições e elas aparecem aqui.</div></div>`;
-      document.getElementById('hist-stats').style.display='none';
-      return;
+      document.getElementById('hist-stats').style.display='none';return;
     }
     const totals=dates.map(d=>days[d]?.totals?.kcal||0).filter(Boolean);
     if(totals.length){
@@ -837,14 +948,8 @@ async function loadHistory(){
       return `
         <div>
           <div class="hist-item" onclick="toggleHist('${detailId}')">
-            <div>
-              <div class="hist-date">${label}</div>
-              <div class="hist-sub">${mcount} item${mcount!==1?'s':''} registrado${mcount!==1?'s':''}</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="badge ${bc}">${pct}%</span>
-              <span class="hist-kcal">${kcal} kcal</span>
-            </div>
+            <div><div class="hist-date">${label}</div><div class="hist-sub">${mcount} item${mcount!==1?'s':''} registrado${mcount!==1?'s':''}</div></div>
+            <div style="display:flex;align-items:center;gap:8px"><span class="badge ${bc}">${pct}%</span><span class="hist-kcal">${kcal} kcal</span></div>
           </div>
           <div class="hist-detail" id="${detailId}">
             ${meals.map(m=>`
@@ -858,57 +963,37 @@ async function loadHistory(){
           </div>
         </div>`;
     }).join('');
-  }catch(e){
-    list.innerHTML=`<div class="air loading">Erro ao carregar histórico. (${e.message})</div>`;
-  }
+  }catch(e){list.innerHTML=`<div class="air loading">Erro ao carregar histórico. (${e.message})</div>`;}
 }
 
-function toggleHist(id){
-  const el=document.getElementById(id);
-  if(el)el.classList.toggle('open');
-}
+function toggleHist(id){const el=document.getElementById(id);if(el)el.classList.toggle('open');}
 
 // ── Integrations ──────────────────────────────────────────────────────────
-function connectStrava(){ window.location.href='/api/auth-strava'; }
-function connectGoogle(){ window.location.href='/api/auth-google'; }
-function connectWithings(){ window.location.href='/api/auth-withings'; }
+function connectStrava(){const t=getToken();window.location.href='/api/auth-strava?token='+encodeURIComponent(t);}
+function connectGoogle(){const t=getToken();window.location.href='/api/auth-google?token='+encodeURIComponent(t);}
+function connectWithings(){const t=getToken();window.location.href='/api/auth-withings?token='+encodeURIComponent(t);}
 
 async function loadIntegrations(){
-  // Check URL params for just-connected provider
   const params=new URLSearchParams(location.search);
-  const connected=params.get('connected');
-  const error=params.get('error');
-  if(connected||error){ history.replaceState({},'','/'); }
+  if(params.get('connected')||params.get('error'))history.replaceState({},'','/');
 
-  // Load activities + Fit data
+  const token=getToken();
   try{
-    const r=await fetch('/api/fetch-activities');
+    const r=await fetch('/api/fetch-activities?token='+encodeURIComponent(token));
+    if(r.status===401){handleUnauth();return;}
     const d=await r.json();
-
-    // Strava
     if(d.strava){
       document.getElementById('strava-status').textContent='Conectado ✓';
       document.getElementById('strava-status').className='int-status connected';
       document.getElementById('strava-btn').textContent='Reconectar';
-      const card=document.getElementById('strava-activities-card');
-      card.style.display='';
+      const card=document.getElementById('strava-activities-card');card.style.display='';
       const list=document.getElementById('strava-activities-list');
-      if(d.strava.length===0){
-        list.innerHTML='<div class="empty-state" style="padding:16px 0"><div class="empty-txt">Nenhuma atividade nos últimos 7 dias</div></div>';
-      } else {
-        list.innerHTML=d.strava.map(a=>`
-          <div class="fitem">
-            <div><div class="fname">${a.name}</div><div class="fportion">${a.type} · ${a.date} · ${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div></div>
-            <span class="fkcal">${a.calories?a.calories+' kcal':'—'}</span>
-          </div>`).join('');
-      }
-    } else if(d.errors?.strava==='not_connected'){
-      document.getElementById('strava-status').textContent='Não conectado';
-    } else if(d.errors?.strava){
-      document.getElementById('strava-status').textContent='Erro: '+d.errors.strava;
-    }
+      list.innerHTML=d.strava.length===0
+        ?'<div class="empty-state" style="padding:16px 0"><div class="empty-txt">Nenhuma atividade nos últimos 7 dias</div></div>'
+        :d.strava.map(a=>`<div class="fitem"><div><div class="fname">${a.name}</div><div class="fportion">${a.type} · ${a.date} · ${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div></div><span class="fkcal">${a.calories?a.calories+' kcal':'—'}</span></div>`).join('');
+    }else if(d.errors?.strava==='not_connected'){document.getElementById('strava-status').textContent='Não conectado';}
+    else if(d.errors?.strava){document.getElementById('strava-status').textContent='Erro: '+d.errors.strava;}
 
-    // Google Fit
     if(d.google){
       document.getElementById('google-status').textContent='Conectado ✓';
       document.getElementById('google-status').className='int-status connected';
@@ -916,29 +1001,22 @@ async function loadIntegrations(){
       document.getElementById('int-steps').textContent=d.google.steps.toLocaleString('pt-BR');
       document.getElementById('int-burned').textContent=d.google.calories_burned;
       document.getElementById('int-burned2').textContent=d.google.calories_burned+' kcal';
-      const consumed=state.kcal;
-      document.getElementById('int-consumed').textContent=consumed+' kcal';
-      const balance=consumed-d.google.calories_burned;
+      document.getElementById('int-consumed').textContent=state.kcal+' kcal';
+      const balance=state.kcal-d.google.calories_burned;
       const balEl=document.getElementById('int-balance');
       balEl.textContent=(balance>0?'+':'')+balance+' kcal';
       balEl.className='balance-net '+(balance>0?'surplus':'deficit');
       document.getElementById('int-dashboard').style.display='';
-    } else if(d.errors?.google==='not_connected'){
-      document.getElementById('google-status').textContent='Não conectado';
-    } else if(d.errors?.google){
-      document.getElementById('google-status').textContent='Erro: '+d.errors.google;
-    }
-  }catch(e){
-    console.warn('loadIntegrations activities error:',e);
-  }
+    }else if(d.errors?.google==='not_connected'){document.getElementById('google-status').textContent='Não conectado';}
+    else if(d.errors?.google){document.getElementById('google-status').textContent='Erro: '+d.errors.google;}
+  }catch(e){console.warn('loadIntegrations activities error:',e);}
 
-  // Withings weight
   try{
-    const r=await fetch('/api/fetch-weight');
+    const r=await fetch('/api/fetch-weight?token='+encodeURIComponent(token));
+    if(r.status===401)return;
     const d=await r.json();
-    if(d.error==='not_connected'){
-      document.getElementById('withings-status').textContent='Não conectado';
-    } else if(d.measurements?.length){
+    if(d.error==='not_connected'){document.getElementById('withings-status').textContent='Não conectado';}
+    else if(d.measurements?.length){
       document.getElementById('withings-status').textContent='Conectado ✓';
       document.getElementById('withings-status').className='int-status connected';
       document.getElementById('withings-btn').textContent='Reconectar';
@@ -952,34 +1030,23 @@ async function loadIntegrations(){
           <div class="sc"><div class="slbl">Data</div><div style="font-size:14px;font-weight:700;color:var(--text)">${latest.date}</div></div>
         </div>`;
     }
-  }catch(e){
-    console.warn('loadIntegrations weight error:',e);
-  }
+  }catch(e){console.warn('loadIntegrations weight error:',e);}
 }
 
 async function logWeightManual(){
   const v=parseFloat(document.getElementById('int-weight-input').value);
   if(!v||v<30||v>300)return;
-  state.weight=v;
-  await saveDay();
-  document.getElementById('int-weight-input').value='';
-  document.getElementById('nw').value='';
+  state.weight=v;await saveDay();document.getElementById('int-weight-input').value='';document.getElementById('nw').value='';
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
 document.getElementById('hdate').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});
 
-function showApp(){
-  document.getElementById('profile-overlay').style.display='none';
-  document.getElementById('main-app').style.display='';
-}
-function showOnboarding(){
-  document.getElementById('profile-overlay').style.display='';
-  document.getElementById('main-app').style.display='none';
-}
-
 async function init(){
-  // Layer 1: localStorage cache — instant, no flash
+  const token=getToken();
+  if(!token){showAuthOverlay();return;}
+
+  // Instant load from localStorage cache
   const cachedProfile=localStorage.getItem('nutriai_profile');
   const onboarded=localStorage.getItem('nutriai_onboarded');
   if(onboarded&&cachedProfile){
@@ -987,39 +1054,34 @@ async function init(){
     if(profile){applyProfile();showApp();loadToday();}
   }
 
-  // Layer 2: Redis onboarding flag (source of truth)
+  // Verify session with server
   try{
-    const ob=await apiData({method:'GET',query:{action:'getOnboarding',userId:'user_001'}});
-    if(!ob.onboarding){
-      // Never completed onboarding — show form regardless of cache
-      showOnboarding();
-      return;
-    }
+    const r=await fetch('/api/auth-me?token='+encodeURIComponent(token));
+    if(!r.ok){handleUnauth();return;}
+    const d=await r.json();
+    currentUser={userId:d.userId,email:d.email,name:d.name};
+    if(profile)renderProfileInfo(); // refresh email display
   }catch(e){
-    console.warn('getOnboarding failed:',e);
-    // Redis unreachable: trust localStorage cache if present
-    if(!onboarded){showOnboarding();return;}
+    // Network error: trust cache if available
+    if(!onboarded){handleUnauth();}
+    return;
   }
 
-  // Layer 3: load full profile from Redis and refresh app
-  try{
-    const d=await apiData({method:'GET',query:{action:'getProfile',userId:UID}});
+  if(!onboarded){
+    await postAuthInit();
+    return;
+  }
+
+  // Refresh profile from Redis in background
+  apiData({method:'GET',query:{action:'getProfile'}}).then(d=>{
     if(d.profile){
       profile=d.profile;
-      localStorage.setItem('nutriai_profile',JSON.stringify(profile));
+      localStorage.setItem('nutriai_profile',JSON.stringify(d.profile));
       applyProfile();
-      showApp();
-      await loadToday();
-    } else if(!onboarded){
-      showOnboarding();
-      return;
     }
-  }catch(e){
-    console.warn('getProfile failed:',e);
-    if(!onboarded){showOnboarding();return;}
-  }
+  }).catch(()=>{});
 
-  // If returning from OAuth, open integrations tab
+  // Handle OAuth callback redirect
   const params=new URLSearchParams(location.search);
   if(params.get('connected')||params.get('error')){
     const navBtns=document.querySelectorAll('.nav-item');

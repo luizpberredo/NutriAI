@@ -5,9 +5,14 @@ const kv = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-const USER_ID = 'user_001';
+async function resolveUserId(token) {
+  if (!token) return null;
+  const session = await kv.get(`session:${token}`);
+  if (!session || new Date(session.expiresAt) < new Date()) return null;
+  return session.userId;
+}
 
-async function refreshWithingsToken(tokens) {
+async function refreshWithingsToken(tokens, userId) {
   const age = Math.floor(Date.now() / 1000) - tokens.issued_at;
   if (age < tokens.expires_in - 60) return tokens;
 
@@ -29,34 +34,31 @@ async function refreshWithingsToken(tokens) {
   if (json.status !== 0) throw new Error(`Withings refresh error: ${json.error}`);
 
   const fresh = json.body;
-  const updated = {
-    ...tokens,
-    access_token: fresh.access_token,
-    refresh_token: fresh.refresh_token,
-    issued_at: Math.floor(Date.now() / 1000),
-    expires_in: fresh.expires_in,
-  };
-  await kv.set(`withings_tokens:${USER_ID}`, updated);
+  const updated = { ...tokens, access_token: fresh.access_token, refresh_token: fresh.refresh_token, issued_at: Math.floor(Date.now() / 1000), expires_in: fresh.expires_in };
+  await kv.set(`withings_tokens:${userId}`, updated);
   return updated;
 }
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  try {
-    let tokens = await kv.get(`withings_tokens:${USER_ID}`);
-    if (!tokens) return res.status(200).json({ error: 'not_connected', measurements: [] });
-    tokens = await refreshWithingsToken(tokens);
+  const userId = await resolveUserId(req.query.token);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    // Last 30 days
+  try {
+    let tokens = await kv.get(`withings_tokens:${userId}`);
+    if (!tokens) return res.status(200).json({ error: 'not_connected', measurements: [] });
+    tokens = await refreshWithingsToken(tokens, userId);
+
     const startdate = Math.floor((Date.now() - 30 * 86400 * 1000) / 1000);
     const enddate = Math.floor(Date.now() / 1000);
 
     const body = new URLSearchParams({
       action: 'getmeas',
-      meastype: '1,6,8', // 1=weight, 6=fat%, 8=fat-free mass
+      meastype: '1,6,8',
       category: '1',
       startdate,
       enddate,
