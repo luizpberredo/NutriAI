@@ -282,6 +282,29 @@ textarea{resize:none}
 .spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:7px}
 .spinner.dark{border-color:rgba(0,0,0,0.12);border-top-color:var(--green)}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* ── Prazo slider ────────────────────────────────────────────────────────── */
+.prazo-slider-wrap{margin:8px 0 20px}
+.prazo-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:var(--border2);outline:none;cursor:pointer}
+.prazo-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;background:var(--green);border:3px solid var(--white);box-shadow:0 2px 8px rgba(52,199,89,.4);cursor:pointer}
+.prazo-slider::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--green);border:3px solid var(--white);box-shadow:0 2px 8px rgba(52,199,89,.4);cursor:pointer}
+.prazo-marks{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:6px;padding:0 2px}
+.prazo-card{border-radius:16px;padding:16px 18px;margin-top:4px;transition:background .3s,border-color .3s}
+.prazo-card .prazo-months{font-size:22px;font-weight:800;margin-bottom:10px}
+.prazo-card .prazo-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:4px}
+.prazo-card .prazo-label{color:inherit;opacity:.75}
+.prazo-card .prazo-val{font-weight:700}
+.prazo-badge{display:inline-block;font-size:12px;font-weight:600;margin-top:8px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.5)}
+.prazo-warn{font-size:12px;font-weight:600;color:var(--red);margin-top:8px}
+/* ── Photo loading overlay ───────────────────────────────────────────────── */
+.photo-loading-ov{position:fixed;inset:0;background:var(--white);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:24px}
+.photo-loading-icon{font-size:52px;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.photo-loading-txt{font-size:18px;font-weight:700;color:var(--text);text-align:center;min-height:28px;transition:opacity .3s}
+.photo-prog-track{width:100%;max-width:280px;height:6px;background:var(--border2);border-radius:3px;overflow:hidden}
+.photo-prog-fill{height:100%;background:var(--green);border-radius:3px;transition:width .4s cubic-bezier(.4,0,.2,1);width:0%}
+/* ── Slide-up result animation ───────────────────────────────────────────── */
+@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.slide-up{animation:slideUp .35s cubic-bezier(.4,0,.2,1) both}
 /* ── Misc ────────────────────────────────────────────────────────────────── */
 .divider{border:none;border-top:1px solid var(--border);margin:12px 0}
 </style>
@@ -419,7 +442,19 @@ textarea{resize:none}
         </div>
       </div>
       <select id="p-activity" style="display:none"><option value="1.2">Sedentário</option><option value="1.375">Levemente ativo</option><option value="1.55" selected>Moderadamente ativo</option><option value="1.725">Muito ativo</option><option value="1.9">Extremamente ativo</option></select>
-      <button id="btn-start" onclick="saveProfile()" style="display:none">Começar</button>
+    </div>
+
+    <!-- Step 5: Prazo -->
+    <div class="ob-step" id="ob-s5">
+      <div class="ob-question">Em quanto tempo?</div>
+      <div class="ob-hint">Arraste para escolher o prazo ideal</div>
+      <div class="prazo-slider-wrap">
+        <input type="range" id="prazo-slider" min="1" max="24" value="6" class="prazo-slider" oninput="updatePrazoCard()"/>
+        <div class="prazo-marks">
+          <span>1m</span><span>6m</span><span>12m</span><span>18m</span><span>24m</span>
+        </div>
+      </div>
+      <div class="prazo-card" id="prazo-card"></div>
     </div>
   </div>
 
@@ -427,6 +462,13 @@ textarea{resize:none}
     <button class="ob-next-btn" id="btn-ob-next" onclick="nextObStep()">Continuar</button>
     <button class="ob-next-btn" id="btn-ob-save" onclick="saveProfile()" style="display:none">Começar 🍏</button>
   </div>
+</div>
+
+<!-- Photo loading overlay -->
+<div class="photo-loading-ov" id="photo-loading-ov">
+  <div class="photo-loading-icon">🔍</div>
+  <div class="photo-loading-txt" id="photo-loading-txt">Identificando alimentos...</div>
+  <div class="photo-prog-track"><div class="photo-prog-fill" id="photo-prog-fill"></div></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -697,6 +739,15 @@ textarea{resize:none}
       </div>
       <div id="profile-info"></div>
     </div>
+    <div class="card" id="prazo-profile-card" style="display:none">
+      <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:14px">⏱ Ajustar prazo da meta</div>
+      <div class="prazo-slider-wrap">
+        <input type="range" id="prazo-slider-profile" min="1" max="24" value="6" class="prazo-slider" oninput="updatePrazoCardProfile()"/>
+        <div class="prazo-marks"><span>1m</span><span>6m</span><span>12m</span><span>18m</span><span>24m</span></div>
+      </div>
+      <div class="prazo-card" id="prazo-card-profile"></div>
+      <button class="ob-next-btn" style="margin-top:16px" onclick="savePrazoProfile()">Salvar meta</button>
+    </div>
     <div class="card">
       <div class="ctitle" style="font-size:17px;font-weight:700;color:var(--text)">Registrar peso hoje</div>
       <div class="wrow" style="margin-bottom:8px">
@@ -891,18 +942,20 @@ async function postAuthInit(){
 let obStep=0;
 let selectedActivity='1.55';
 
+const OB_TOTAL=6;
 function showObStep(n){
   document.querySelectorAll('.ob-step').forEach((el,i)=>el.classList.toggle('active',i===n));
-  document.getElementById('ob-progress').style.width=((n+1)/5*100)+'%';
+  document.getElementById('ob-progress').style.width=((n+1)/OB_TOTAL*100)+'%';
   document.getElementById('ob-back').style.visibility=n>0?'visible':'hidden';
-  document.getElementById('ob-counter').textContent=(n+1)+' de 5';
-  document.getElementById('btn-ob-next').style.display=n<4?'':'none';
-  document.getElementById('btn-ob-save').style.display=n===4?'':'none';
+  document.getElementById('ob-counter').textContent=(n+1)+' de '+OB_TOTAL;
+  document.getElementById('btn-ob-next').style.display=n<OB_TOTAL-1?'':'none';
+  document.getElementById('btn-ob-save').style.display=n===OB_TOTAL-1?'':'none';
+  if(n===5)updatePrazoCard(); // refresh when arriving at prazo step
 }
 
 function nextObStep(){
   if(obStep===0&&!document.getElementById('p-name').value.trim()){document.getElementById('p-name').focus();return;}
-  if(obStep<4){obStep++;showObStep(obStep);}
+  if(obStep<OB_TOTAL-1){obStep++;showObStep(obStep);}
 }
 function prevObStep(){if(obStep>0){obStep--;showObStep(obStep);}}
 
@@ -911,6 +964,69 @@ function selActivity(el,val){
   document.getElementById('p-activity').value=val;
   document.querySelectorAll('#ob-s4 .ob-card').forEach(c=>c.classList.remove('sel'));
   el.classList.add('sel');
+}
+
+// ── Prazo slider ───────────────────────────────────────────────────────────
+const PT_MONTHS=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function calcPrazoData(meses, weight, goalWeight, age, height, sex, activity){
+  const bmr=sex==='m'?(10*weight+6.25*height-5*age+5):(10*weight+6.25*height-5*age-161);
+  const tdee=Math.round(bmr*(activity||1.55));
+  const diffKg=weight-goalWeight;
+  const calTotal=diffKg*7700;
+  const deficitRaw=meses>0?calTotal/(meses*30):0;
+  const deficit=Math.min(deficitRaw,1000);
+  const meta=Math.round(tdee-deficit);
+  const d=new Date(); d.setMonth(d.getMonth()+meses);
+  const datePrev=PT_MONTHS[d.getMonth()]+' de '+d.getFullYear();
+  let bg,color,border,badge;
+  if(meses<=3){bg='#FFF0EE';color='#C0392B';border='#FF3B30';badge='⚠️ ritmo intenso';}
+  else if(meses<=6){bg='#FFF5E6';color='#A04000';border='#FF9F0A';badge='🟡 ritmo moderado';}
+  else if(meses<=12){bg='#E8F9ED';color='#1A6E5E';border='#34C759';badge='✅ recomendado';}
+  else{bg='#EBF3FF';color='#004A9E';border='#007AFF';badge='😊 ritmo confortável';}
+  return{tdee,deficit:Math.round(deficit),meta,datePrev,bg,color,border,badge,diffKg,tooLow:meta<1200};
+}
+
+function renderPrazoCard(el, meses, weight, goalWeight, age, height, sex, activity){
+  if(!el)return;
+  if(!weight||!goalWeight||!age||!height){el.innerHTML='<div style="color:var(--text2);font-size:13px">Preencha os dados anteriores para ver a previsão.</div>';return;}
+  const r=calcPrazoData(meses,weight,goalWeight,age,height,sex,activity);
+  el.style.background=r.bg;el.style.border='1.5px solid '+r.border;el.style.color=r.color;
+  el.innerHTML=`
+    <div class="prazo-months">⏱ ${meses} ${meses===1?'mês':'meses'}</div>
+    <div class="prazo-row"><span class="prazo-label">Meta calórica diária</span><span class="prazo-val">${r.meta} kcal</span></div>
+    <div class="prazo-row"><span class="prazo-label">${r.diffKg>=0?'Déficit':'Superávit'} diário</span><span class="prazo-val">${Math.abs(r.deficit)} kcal/dia</span></div>
+    <div class="prazo-row"><span class="prazo-label">Previsão</span><span class="prazo-val">${r.datePrev}</span></div>
+    <span class="prazo-badge">${r.badge}</span>
+    ${r.tooLow?'<div class="prazo-warn">⚠️ Abaixo do mínimo seguro (1200 kcal)</div>':''}`;
+}
+
+function updatePrazoCard(){
+  const meses=parseInt(document.getElementById('prazo-slider').value)||6;
+  const w=parseFloat(document.getElementById('p-weight').value)||0;
+  const g=parseFloat(document.getElementById('p-goal').value)||0;
+  const age=parseInt(document.getElementById('p-age').value)||0;
+  const h=parseInt(document.getElementById('p-height').value)||0;
+  const act=parseFloat(document.getElementById('p-activity').value)||1.55;
+  renderPrazoCard(document.getElementById('prazo-card'),meses,w,g,age,h,selectedSex||'m',act);
+}
+
+function updatePrazoCardProfile(){
+  if(!profile)return;
+  const meses=parseInt(document.getElementById('prazo-slider-profile').value)||6;
+  renderPrazoCard(document.getElementById('prazo-card-profile'),meses,profile.weight,profile.goalWeight,profile.age,profile.height,profile.sex,profile.activity);
+}
+
+async function savePrazoProfile(){
+  if(!profile)return;
+  const meses=parseInt(document.getElementById('prazo-slider-profile').value)||6;
+  const r=calcPrazoData(meses,profile.weight,profile.goalWeight,profile.age,profile.height,profile.sex,profile.activity);
+  profile.prazoMeses=meses;profile.metaKcal=r.meta;
+  calorieGoal=r.meta;
+  document.getElementById('goal-lbl').textContent='/'+calorieGoal+' kcal';
+  updateRing();
+  try{await apiData({body:{action:'saveProfile',profile}});}catch(e){console.warn('savePrazoProfile:',e);}
+  const btn=event.target;btn.textContent='✓ Salvo';setTimeout(()=>btn.textContent='Salvar meta',2000);
 }
 
 // ── Calorie goal (Mifflin-St Jeor) ────────────────────────────────────────
@@ -942,7 +1058,9 @@ async function saveProfile(){
   if(!name||!age||!height||!weight||!goalWeight){alert('Preencha todos os campos.');return;}
   const saveBtn=document.getElementById('btn-ob-save');
   saveBtn.disabled=true;saveBtn.innerHTML='<span class="spinner"></span>Salvando...';
-  profile={name,age,sex:selectedSex,height,weight,goalWeight,activity};
+  const prazoMeses=parseInt(document.getElementById('prazo-slider')?.value)||6;
+  const prazoData=calcPrazoData(prazoMeses,weight,goalWeight,age,height,selectedSex||'m',activity);
+  profile={name,age,sex:selectedSex,height,weight,goalWeight,activity,prazoMeses,metaKcal:prazoData.meta};
   try{
     await apiData({body:{action:'saveProfile',profile}});
     await apiData({body:{action:'saveOnboarding'}});
@@ -956,9 +1074,18 @@ async function saveProfile(){
 function applyProfile(){
   if(!profile)return;
   const g=calcGoal(profile);
-  calorieGoal=g.kcal;protGoal=g.prot;carbGoal=g.carb;fatGoal=g.fat;
+  // Use metaKcal from prazo if available, otherwise TDEE
+  calorieGoal=profile.metaKcal||g.kcal;
+  protGoal=g.prot;carbGoal=g.carb;fatGoal=g.fat;
   document.getElementById('goal-lbl').textContent='/'+calorieGoal+' kcal';
   renderProfileInfo();updateRing();
+  // Show prazo card in profile tab
+  const pc=document.getElementById('prazo-profile-card');
+  if(pc&&profile.prazoMeses){
+    pc.style.display='';
+    document.getElementById('prazo-slider-profile').value=profile.prazoMeses||6;
+    updatePrazoCardProfile();
+  }
 }
 
 function renderProfileInfo(){
@@ -993,6 +1120,9 @@ function openEditProfile(){
     const v=c.getAttribute('onclick')?.match(/'([\d.]+)'/)?.[1];
     c.classList.toggle('sel',v===selectedActivity);
   });
+  // Pre-fill prazo slider
+  const sl=document.getElementById('prazo-slider');
+  if(sl){sl.value=profile.prazoMeses||6;}
   document.getElementById('btn-ob-save').textContent='Salvar alterações';
   showOnboarding();
 }
@@ -1098,20 +1228,47 @@ function handleFile(e){
   r.readAsDataURL(f);
 }
 
+let _photoTimer=null;
+function _startPhotoLoading(){
+  const msgs=['Identificando alimentos...','Calculando macros...','Estimando calorias...','Finalizando...'];
+  const ov=document.getElementById('photo-loading-ov');
+  const bar=document.getElementById('photo-prog-fill');
+  const txt=document.getElementById('photo-loading-txt');
+  ov.style.display='flex';bar.style.width='0%';txt.textContent=msgs[0];
+  let pct=0,mi=0;
+  _photoTimer=setInterval(()=>{
+    if(pct<85){
+      pct+=pct<30?2.5:pct<60?1.2:0.4;
+      bar.style.width=pct.toFixed(1)+'%';
+      if(pct>22&&mi===0){mi=1;txt.style.opacity=0;setTimeout(()=>{txt.textContent=msgs[1];txt.style.opacity=1;},200);}
+      else if(pct>48&&mi===1){mi=2;txt.style.opacity=0;setTimeout(()=>{txt.textContent=msgs[2];txt.style.opacity=1;},200);}
+      else if(pct>72&&mi===2){mi=3;txt.style.opacity=0;setTimeout(()=>{txt.textContent=msgs[3];txt.style.opacity=1;},200);}
+    }
+  },120);
+}
+function _stopPhotoLoading(){
+  clearInterval(_photoTimer);
+  const bar=document.getElementById('photo-prog-fill');
+  bar.style.width='100%';
+  setTimeout(()=>{document.getElementById('photo-loading-ov').style.display='none';bar.style.width='0%';},450);
+}
+
 async function analyzePhoto(b64,mime){
   const out=document.getElementById('foto-out');
-  out.innerHTML='<div class="air loading"><span class="spinner dark"></span>Analisando a foto...</div>';
+  out.innerHTML='';
+  _startPhotoLoading();
   try{
     const txt=await callProxy([{role:'user',content:[
       {type:'image',source:{type:'base64',media_type:mime,data:b64}},
       {type:'text',text:'Você é um nutricionista especializado em culinária brasileira e suplementos fitness. Analise esta foto — pode ser um prato, embalagem de suplemento (whey, creatina, etc.), lanche ou bebida. Responda SOMENTE JSON sem markdown: {"itens":[{"nome":"nome do alimento ou suplemento","porcao":"dose ou gramas estimados","kcal":220,"prot":10,"carb":30,"fat":5}],"totalKcal":220,"analise":"avaliação nutricional em até 70 chars","qualidade":"boa|razoavel|melhorar"}'}
     ]}]);
+    _stopPhotoLoading();
     const p=JSON.parse(txt);
     window._pItems=p.itens;
     const qc=p.qualidade==='boa'?'bg':p.qualidade==='razoavel'?'ba':'br';
     const ql=p.qualidade==='boa'?'equilibrada':p.qualidade==='razoavel'?'pode melhorar':'atenção';
     out.innerHTML=`
-      <div class="analysis-sheet">
+      <div class="analysis-sheet slide-up">
         <div class="air" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px">
           <span>${p.analise} — <strong>${p.totalKcal} kcal</strong></span>
           <span class="badge ${qc}">${ql}</span>
@@ -1125,7 +1282,7 @@ async function analyzePhoto(b64,mime){
         </div>
         <button class="bp" style="margin-top:12px" onclick="addAllFoto()">+ Adicionar todos</button>
       </div>`;
-  }catch(e){out.innerHTML=`<div class="air loading">Erro ao analisar a foto. (${e.message})</div>`;}
+  }catch(e){_stopPhotoLoading();out.innerHTML=`<div class="air loading">Erro ao analisar a foto. (${e.message})</div>`;}
 }
 
 window._pItems=[];
