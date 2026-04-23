@@ -96,14 +96,23 @@ export default async function handler(req, res) {
 
     try {
       let tokens = await kv.get(`strava_tokens:${userId}`);
+      console.log('[health-data] userId:', userId, '| strava tokens found:', !!tokens, tokens ? `expires_at:${tokens.expires_at}` : '');
       if (!tokens) throw new Error('not_connected');
       tokens = await refreshStravaToken(tokens, userId);
       const after = Math.floor((Date.now() - 7 * 86400 * 1000) / 1000);
-      const r = await fetch(`https://www.strava.com/api/v3/athlete/activities?after=${after}&per_page=30`, {
+      const stravaUrl = `https://www.strava.com/api/v3/athlete/activities?after=${after}&per_page=30`;
+      console.log('[health-data] calling Strava:', stravaUrl);
+      const r = await fetch(stravaUrl, {
         headers: { Authorization: `Bearer ${tokens.access_token}` },
       });
-      if (!r.ok) throw new Error(`Strava API error: ${r.status}`);
+      console.log('[health-data] Strava response status:', r.status);
+      if (!r.ok) {
+        const body = await r.text();
+        console.error('[health-data] Strava error body:', body);
+        throw new Error(`Strava API error: ${r.status}`);
+      }
       const activities = await r.json();
+      console.log('[health-data] Strava activities count:', activities.length, activities.slice(0,2).map(a=>({name:a.name,date:a.start_date_local,cal:a.calories})));
       result.strava = activities.map(a => ({
         id: a.id,
         name: a.name,

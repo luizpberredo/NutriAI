@@ -532,6 +532,15 @@ textarea{resize:none}
     <!-- Pagination dots -->
     <div class="dots-row"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
 
+    <!-- Atividades de Hoje (Strava) -->
+    <div class="card" id="today-activities-card" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:17px;font-weight:700;color:var(--text)">🏃 Atividades de Hoje</div>
+        <div id="today-act-total" style="font-size:15px;font-weight:700;color:var(--green)"></div>
+      </div>
+      <div id="today-activities-list"></div>
+    </div>
+
     <!-- Meals -->
     <div class="section-header">
       <div class="section-title">Enviado recentemente</div>
@@ -1285,6 +1294,17 @@ function connectStrava(){const t=getToken();window.location.href='/api/oauth?pro
 function connectGoogle(){const t=getToken();window.location.href='/api/oauth?provider=google&action=start&token='+encodeURIComponent(t);}
 function connectWithings(){const t=getToken();window.location.href='/api/oauth?provider=withings&action=start&token='+encodeURIComponent(t);}
 
+function actIcon(type){
+  const t=(type||'').toLowerCase();
+  if(t.includes('run')||t.includes('walk'))return'🏃';
+  if(t.includes('ride')||t.includes('bike')||t.includes('cycl'))return'🚴';
+  if(t.includes('swim'))return'🏊';
+  if(t.includes('weight')||t.includes('strength')||t.includes('workout'))return'🏋️';
+  if(t.includes('yoga'))return'🧘';
+  if(t.includes('hike'))return'🥾';
+  return'🏅';
+}
+
 async function loadIntegrations(){
   const params=new URLSearchParams(location.search);
   if(params.get('connected')||params.get('error'))history.replaceState({},'','/');
@@ -1293,17 +1313,52 @@ async function loadIntegrations(){
     const r=await fetch('/api/health-data?type=activities&token='+encodeURIComponent(token));
     if(r.status===401){handleUnauth();return;}
     const d=await r.json();
+    console.log('[loadIntegrations] response:', JSON.stringify(d).slice(0,400));
+
+    // ── Pill total burned = Strava today + Google Fit ──────────────────────
+    let totalBurnedToday=0;
+
     if(d.strava){
       document.getElementById('strava-status').textContent='Conectado ✓';
       document.getElementById('strava-status').className='int-status connected';
       document.getElementById('strava-btn').textContent='Reconectar';
-      const card=document.getElementById('strava-activities-card');card.style.display='';
-      const list=document.getElementById('strava-activities-list');
-      list.innerHTML=d.strava.length===0
+
+      // ── Atividades de hoje (card home) ────────────────────────────────────
+      const todayActs=d.strava.filter(a=>a.date===TODAY);
+      const stravaCalToday=todayActs.reduce((s,a)=>s+(a.calories||0),0);
+      totalBurnedToday+=stravaCalToday;
+
+      const todayCard=document.getElementById('today-activities-card');
+      const todayList=document.getElementById('today-activities-list');
+      const todayTotal=document.getElementById('today-act-total');
+      todayCard.style.display='';
+      if(todayActs.length===0){
+        todayList.innerHTML='<div style="color:var(--text2);font-size:14px;text-align:center;padding:10px 0">Nenhuma atividade hoje</div>';
+        todayTotal.textContent='';
+      }else{
+        todayList.innerHTML=todayActs.map(a=>`
+          <div class="fitem">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:22px">${actIcon(a.type)}</span>
+              <div>
+                <div class="fname">${a.name}</div>
+                <div class="fportion">${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div>
+              </div>
+            </div>
+            <span class="fkcal" style="color:var(--green)">${a.calories?a.calories+' kcal':'—'}</span>
+          </div>`).join('');
+        todayTotal.textContent=stravaCalToday?stravaCalToday+' kcal gastas':'';
+      }
+
+      // ── Atividades tab integrações (7 dias) ──────────────────────────────
+      const card7=document.getElementById('strava-activities-card');card7.style.display='';
+      const list7=document.getElementById('strava-activities-list');
+      list7.innerHTML=d.strava.length===0
         ?'<div class="empty-state" style="padding:16px 0"><div class="empty-txt">Nenhuma atividade nos últimos 7 dias</div></div>'
-        :d.strava.map(a=>`<div class="fitem"><div><div class="fname">${a.name}</div><div class="fportion">${a.type} · ${a.date} · ${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div></div><span class="fkcal">${a.calories?a.calories+' kcal':'—'}</span></div>`).join('');
+        :d.strava.map(a=>`<div class="fitem"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">${actIcon(a.type)}</span><div><div class="fname">${a.name}</div><div class="fportion">${a.date} · ${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div></div></div><span class="fkcal">${a.calories?a.calories+' kcal':'—'}</span></div>`).join('');
     }else if(d.errors?.strava==='not_connected'){document.getElementById('strava-status').textContent='Não conectado';}
-    else if(d.errors?.strava){document.getElementById('strava-status').textContent='Erro: '+d.errors.strava;}
+    else if(d.errors?.strava){document.getElementById('strava-status').textContent='Erro: '+d.errors.strava;console.warn('[loadIntegrations] strava error:',d.errors.strava);}
+
     if(d.google){
       document.getElementById('google-status').textContent='Conectado ✓';
       document.getElementById('google-status').className='int-status connected';
@@ -1317,11 +1372,15 @@ async function loadIntegrations(){
       balEl.textContent=(balance>0?'+':'')+balance+' kcal';
       balEl.className='balance-net '+(balance>0?'surplus':'deficit');
       document.getElementById('int-dashboard').style.display='';
-      // Update pill on main card
-      const pillEl=document.getElementById('pill-burned-val');
-      if(pillEl){pillEl.textContent=d.google.calories_burned;document.getElementById('cal-pills-row').style.display='';}
+      totalBurnedToday+=d.google.calories_burned;
     }else if(d.errors?.google==='not_connected'){document.getElementById('google-status').textContent='Não conectado';}
     else if(d.errors?.google){document.getElementById('google-status').textContent='Erro: '+d.errors.google;}
+
+    // ── Update pill on main card (Strava today + Google Fit) ───────────────
+    if(totalBurnedToday>0){
+      const pillEl=document.getElementById('pill-burned-val');
+      if(pillEl){pillEl.textContent=totalBurnedToday;document.getElementById('cal-pills-row').style.display='';}
+    }
   }catch(e){console.warn('loadIntegrations activities error:',e);}
   try{
     const r=await fetch('/api/health-data?type=weight&token='+encodeURIComponent(token));
