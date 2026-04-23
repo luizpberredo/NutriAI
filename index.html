@@ -255,6 +255,31 @@ textarea{resize:none}
 .fgroup{margin-bottom:14px}
 .flabel{font-size:13px;font-weight:600;color:var(--text);margin-bottom:7px;display:block}
 .srow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* ── Toast notification ──────────────────────────────────────────────────── */
+.toast{
+  position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+  background:#1A1A1A;color:#fff;padding:11px 18px;border-radius:40px;
+  font-size:13px;font-weight:600;white-space:nowrap;z-index:200;
+  opacity:0;transition:opacity .25s;pointer-events:none;max-width:calc(100% - 32px);text-align:center
+}
+.toast.show{opacity:1}
+/* ── Meal edit bottom-sheet ──────────────────────────────────────────────── */
+.edit-sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:150;opacity:0;transition:opacity .25s;pointer-events:none}
+.edit-sheet-backdrop.show{opacity:1;pointer-events:all}
+.edit-sheet{
+  position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;
+  background:var(--white);border-radius:24px 24px 0 0;z-index:151;
+  padding:20px 20px calc(24px + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.72,0);
+  max-height:85vh;overflow-y:auto
+}
+.edit-sheet.show{transform:translateY(0)}
+.edit-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px}
+.edit-before-after{display:flex;align-items:center;gap:10px;margin:14px 0;padding:12px;background:var(--bg);border-radius:var(--rs)}
+.edit-arrow{color:var(--text3);font-size:18px}
+.edit-val{flex:1;text-align:center}
+.edit-val-lbl{font-size:11px;color:var(--text2);font-weight:600;margin-bottom:2px}
+.edit-val-num{font-size:20px;font-weight:800}
 /* ── Auth overlay ────────────────────────────────────────────────────────── */
 .overlay{position:fixed;inset:0;background:var(--white);z-index:100;overflow-y:auto;display:flex;flex-direction:column;align-items:stretch;max-width:430px;margin:0 auto}
 .auth-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:40px 28px 48px;min-height:100vh}
@@ -867,6 +892,30 @@ textarea{resize:none}
   </nav>
 </div>
 
+<!-- Toast -->
+<div class="toast" id="app-toast"></div>
+
+<!-- Meal edit bottom-sheet -->
+<div class="edit-sheet-backdrop" id="edit-backdrop" onclick="closeEditSheet()"></div>
+<div class="edit-sheet" id="edit-sheet">
+  <div class="edit-sheet-handle"></div>
+  <div style="font-size:17px;font-weight:800;margin-bottom:14px">Corrigir refeição</div>
+  <div id="edit-sheet-img" style="margin-bottom:12px"></div>
+  <div id="edit-sheet-items" style="margin-bottom:14px"></div>
+  <label class="flabel">Descreva a correção</label>
+  <textarea id="edit-correction-txt" rows="3" placeholder='Ex: "o queijo é Brie, não Cheddar" ou "eram 2 fatias, não 1"' style="margin-bottom:12px"></textarea>
+  <button class="bp" id="edit-analyze-btn" onclick="analyzeCorrection()">Analisar correção</button>
+  <div id="edit-result" style="display:none">
+    <div class="edit-before-after">
+      <div class="edit-val"><div class="edit-val-lbl">Antes</div><div class="edit-val-num" id="edit-before-kcal" style="color:var(--text2)">—</div><div style="font-size:11px;color:var(--text2)">kcal</div></div>
+      <div class="edit-arrow">→</div>
+      <div class="edit-val"><div class="edit-val-lbl">Depois</div><div class="edit-val-num" id="edit-after-kcal" style="color:var(--green-dk)">—</div><div style="font-size:11px;color:var(--text2)">kcal</div></div>
+    </div>
+    <div id="edit-new-items" style="margin-bottom:14px"></div>
+    <button class="bp" onclick="confirmCorrection()">Confirmar correção</button>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
 // ── Auth ───────────────────────────────────────────────────────────────────
@@ -1100,9 +1149,13 @@ async function savePrazoProfile(){
   profile.prazoMeses=meses;profile.metaKcal=r.meta;
   calorieGoal=r.meta;
   document.getElementById('goal-lbl').textContent='/'+calorieGoal+' kcal';
+  document.getElementById('prof-kcal-meta').textContent=calorieGoal+' kcal/dia';
   updateRing();
   try{await apiData({body:{action:'saveProfile',profile}});}catch(e){console.warn('savePrazoProfile:',e);}
-  const btn=event.target;btn.textContent='✓ Salvo';setTimeout(()=>btn.textContent='Salvar meta',2000);
+  const btn=event.target;
+  btn.textContent='✓ Meta salva!';btn.style.background='var(--green)';
+  setTimeout(()=>{btn.textContent='Salvar meta';btn.style.background='';},2000);
+  showToast('Meta calórica atualizada para '+calorieGoal+' kcal/dia');
 }
 
 // ── Calorie goal (Mifflin-St Jeor) ────────────────────────────────────────
@@ -1367,11 +1420,27 @@ async function callProxy(messages){
 }
 
 // ── Tab navigation ─────────────────────────────────────────────────────────
+function resetCamera(){
+  curImg=null;curImgUrl=null;
+  const inp=document.getElementById('finput');if(inp)inp.value='';
+  const drop=document.getElementById('pdrop');
+  if(drop){
+    drop.classList.remove('hasimg');
+    drop.innerHTML=`<div class="camera-guide">
+      <div class="camera-btn-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+      <div class="camera-label">Fotografe seu prato</div>
+      <div class="camera-hint">Prato, embalagem, shake, qualquer alimento</div>
+    </div>`;
+  }
+  const out=document.getElementById('foto-out');if(out)out.innerHTML='';
+}
+
 function goTab(t,el){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
+  if(t!=='registrar')resetCamera();
   if(t==='historico')loadHistory();
   if(t==='integracoes')loadIntegrations();
   if(t==='perfil'){renderProfileTab();setTimeout(renderWChart,60);}
@@ -1509,18 +1578,117 @@ function renderMeals(){
       </div>`;
     return;
   }
-  document.getElementById('meals-list').innerHTML=state.meals.map(m=>`
+  document.getElementById('meals-list').innerHTML=state.meals.map((m,mi)=>`
     <div class="meal-sec">
       <div class="meal-hdr"><span class="meal-t">${m.name}</span><span class="meal-k">${m.kcal} kcal</span></div>
-      ${m.items.length?`<div class="meal-items">${m.items.map(i=>`
+      ${m.items.length?`<div class="meal-items">${m.items.map((i,ii)=>`
         <div class="fitem">
           <div class="fleft">
             ${i.img?`<img src="${i.img}" class="fthumb" alt="${i.n}"/>`:''}
             <div><div class="fname">${i.n}</div><div class="fportion">${i.p}</div></div>
           </div>
-          <span class="fkcal">${i.k} kcal</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="fkcal">${i.k} kcal</span>
+            <button onclick="openEditSheet(${mi},${ii})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--text3);touch-action:manipulation" title="Corrigir">✏️</button>
+          </div>
         </div>`).join('')}</div>`:''}
     </div>`).join('');
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let _toastTimer=null;
+function showToast(msg,duration=2500){
+  const t=document.getElementById('app-toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),duration);
+}
+
+// ── Meal edit sheet ────────────────────────────────────────────────────────
+let _editMealIdx=null,_editItemIdx=null,_editNewItems=null;
+
+function openEditSheet(mi,ii){
+  _editMealIdx=mi;_editItemIdx=ii;_editNewItems=null;
+  const meal=state.meals[mi];
+  const item=meal.items[ii];
+  // Imagem
+  const imgEl=document.getElementById('edit-sheet-img');
+  imgEl.innerHTML=item.img?`<img src="${item.img}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px" alt="foto"/>`:'';
+  // Items da refeição
+  document.getElementById('edit-sheet-items').innerHTML=`
+    <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:6px">${meal.name}</div>
+    <div style="background:var(--bg);border-radius:12px;padding:10px 12px">
+      ${meal.items.map((it,idx)=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:${idx<meal.items.length-1?'1px solid var(--border)':'none'}">
+        <span style="font-size:13px;${idx===ii?'font-weight:700;color:var(--text)':'color:var(--text2)'}">${it.n}</span>
+        <span style="font-size:13px;color:var(--text2)">${it.k} kcal</span>
+      </div>`).join('')}
+    </div>`;
+  // Reset resultado
+  document.getElementById('edit-correction-txt').value='';
+  document.getElementById('edit-result').style.display='none';
+  document.getElementById('edit-analyze-btn').disabled=false;
+  document.getElementById('edit-analyze-btn').textContent='Analisar correção';
+  // Show sheet
+  document.getElementById('edit-backdrop').classList.add('show');
+  document.getElementById('edit-sheet').classList.add('show');
+}
+
+function closeEditSheet(){
+  document.getElementById('edit-backdrop').classList.remove('show');
+  document.getElementById('edit-sheet').classList.remove('show');
+}
+
+async function analyzeCorrection(){
+  const correction=document.getElementById('edit-correction-txt').value.trim();
+  if(!correction)return;
+  const meal=state.meals[_editMealIdx];
+  const btn=document.getElementById('edit-analyze-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner dark"></span>Analisando...';
+  const itemsDesc=meal.items.map(i=>`${i.n} (${i.p}, ${i.k} kcal)`).join('; ');
+  try{
+    const txt=await callProxy([{role:'user',content:`Nutricionista brasileiro. Refeição original: ${itemsDesc}. Correção do usuário: "${correction}". Recalcule os macros considerando a correção. SOMENTE JSON sem markdown: {"itens":[{"nome":"nome","porcao":"porção","kcal":200,"prot":10,"carb":25,"fat":5}],"totalKcal":200}`}]);
+    const p=JSON.parse(txt);
+    _editNewItems=p.itens;
+    const oldKcal=meal.kcal;
+    const newKcal=p.totalKcal||p.itens.reduce((s,i)=>s+i.kcal,0);
+    document.getElementById('edit-before-kcal').textContent=oldKcal;
+    document.getElementById('edit-after-kcal').textContent=newKcal;
+    document.getElementById('edit-new-items').innerHTML=`
+      <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:6px">Novo itens</div>
+      <div style="background:var(--bg);border-radius:12px;padding:10px 12px">
+        ${p.itens.map((it,idx)=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:${idx<p.itens.length-1?'1px solid var(--border)':'none'}">
+          <div><div style="font-size:13px;font-weight:600">${it.nome}</div><div style="font-size:11px;color:var(--text2)">${it.porcao}</div></div>
+          <span style="font-size:13px;color:var(--green-dk);font-weight:700">${it.kcal} kcal</span>
+        </div>`).join('')}
+      </div>`;
+    document.getElementById('edit-result').style.display='block';
+    btn.textContent='Reanalisar';btn.disabled=false;
+  }catch(e){
+    btn.textContent='Analisar correção';btn.disabled=false;
+    showToast('Erro ao analisar: '+e.message);
+  }
+}
+
+function confirmCorrection(){
+  if(!_editNewItems||_editMealIdx===null)return;
+  const meal=state.meals[_editMealIdx];
+  const oldKcal=meal.kcal;
+  const newKcal=_editNewItems.reduce((s,i)=>s+i.kcal,0);
+  const img=meal.items[_editItemIdx]?.img||null;
+  // Rebuild meal items: replace all items with corrected set (meal-level correction)
+  meal.items=_editNewItems.map(it=>({n:it.nome,p:it.porcao,k:it.kcal,img}));
+  meal.kcal=newKcal;
+  // Adjust state totals
+  const diff=newKcal-oldKcal;
+  state.kcal+=diff;
+  state.prot+=(_editNewItems.reduce((s,i)=>s+(i.prot||0),0)-meal.items.reduce((s,i)=>s+(i.prot||0),0));
+  // Recalc prot/carb/fat from scratch for accuracy
+  state.prot=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.prot||0),0),0);
+  state.carb=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.carb||0),0),0);
+  state.fat=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.fat||0),0),0);
+  updateRing();renderMeals();saveDay();
+  closeEditSheet();
+  showToast('Refeição corrigida! '+oldKcal+' → '+newKcal+' kcal');
 }
 
 // ── Update calorie ring ─────────────────────────────────────────────────────
