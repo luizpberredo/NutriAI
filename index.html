@@ -1132,29 +1132,35 @@ async function saveProfile(){
   if(!name){obStep=0;showObStep(0);document.getElementById('p-name').focus();return;}
   if(!age||!height){obStep=1;showObStep(1);return;}
   if(!weight||!goalWeight){obStep=3;showObStep(3);return;}
+
   const saveBtn=document.getElementById('btn-ob-save');
   const isEdit=saveBtn.textContent.includes('Salvar');
   saveBtn.disabled=true;saveBtn.innerHTML='<span class="spinner"></span>Salvando...';
+
   const prazoMeses=parseInt(document.getElementById('prazo-slider')?.value)||6;
   const prazoData=calcPrazoData(prazoMeses,weight,goalWeight,age,height,selectedSex||'m',activity);
   profile={name,age,sex:selectedSex,height,weight,goalWeight,activity,prazoMeses,metaKcal:prazoData.meta};
-  try{
-    await apiData({body:{action:'saveProfile',profile}});
-    await apiData({body:{action:'saveOnboarding'}});
-    localStorage.setItem('nutriai_onboarded','1');
-    localStorage.setItem('nutriai_profile',JSON.stringify(profile));
-    console.log('[saveProfile] saved OK, prazo:',prazoMeses,'meta:',prazoData.meta);
-  }catch(e){
-    console.warn('Save profile failed:',e);
-    saveBtn.disabled=false;
-    saveBtn.textContent=isEdit?'Salvar alterações':'Começar 🍏';
-    alert('Erro ao salvar: '+e.message);
-    return;
-  }
-  saveBtn.disabled=false;saveBtn.textContent=isEdit?'Salvar alterações':'Começar 🍏';
+
+  // ── 1. Salva local imediatamente — não bloqueia navegação ─────────────────
+  localStorage.setItem('nutriai_onboarded','1');
+  localStorage.setItem('nutriai_profile',JSON.stringify(profile));
+
+  // ── 2. Vai para o dashboard imediatamente ─────────────────────────────────
   applyProfile();
   showApp();
+  saveBtn.disabled=false;saveBtn.textContent=isEdit?'Salvar alterações':'Começar 🍏';
   if(!isEdit) loadToday();
+
+  // ── 3. Tenta persistir no Redis em background (sem bloquear) ──────────────
+  (async()=>{
+    try{
+      await apiData({body:{action:'saveProfile',profile}});
+      await apiData({body:{action:'saveOnboarding'}});
+      console.log('[saveProfile] synced to Redis OK');
+    }catch(e){
+      console.error('[saveProfile] Redis sync failed (dados salvos local):', e.message, e);
+    }
+  })();
 }
 
 function applyProfile(){
