@@ -72,15 +72,20 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:
 }
 .nav-item.active{color:var(--green)}
 .nav-svg{width:24px;height:24px;flex-shrink:0}
-/* FAB: fixed bottom-right */
-.fab{
-  position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:20px;
-  width:54px;height:54px;border-radius:50%;background:#1A1A1A;
-  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 16px rgba(0,0,0,0.25);z-index:30;transition:transform .15s
+/* FAB: center nav item */
+.nav-fab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;border:none;background:none;padding:4px 0;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent
 }
-.fab:active{transform:scale(.93)}
-.fab svg{width:24px;height:24px}
+.nav-fab-circle{
+  width:50px;height:50px;border-radius:50%;background:var(--green);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 10px rgba(52,199,89,0.4);transition:transform .15s;
+  margin-top:-14px
+}
+.nav-fab:active .nav-fab-circle{transform:scale(.90)}
+.nav-fab-circle svg{width:26px;height:26px}
 /* ── Cards ───────────────────────────────────────────────────────────────── */
 .card{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;margin-bottom:12px}
 .ctitle{font-size:17px;font-weight:700;color:var(--text);margin-bottom:14px}
@@ -836,7 +841,7 @@ textarea{resize:none}
 
   </div>
 
-  <!-- Bottom nav: 4 itens -->
+  <!-- Bottom nav: 5 itens (FAB central) -->
   <nav class="bottom-nav">
     <button class="nav-item active" onclick="goTab('hoje',this)">
       <svg class="nav-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -845,6 +850,11 @@ textarea{resize:none}
     <button class="nav-item" onclick="goTab('historico',this)">
       <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
       Progresso
+    </button>
+    <button class="nav-fab" onclick="goTab('registrar',null)">
+      <div class="nav-fab-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
     </button>
     <button class="nav-item" id="nav-integracoes" onclick="goTab('integracoes',this)">
       <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="19" cy="11" r="2"/><path d="M23 21v-1a2 2 0 0 0-2-2h-2"/></svg>
@@ -855,11 +865,6 @@ textarea{resize:none}
       Perfil
     </button>
   </nav>
-
-  <!-- FAB -->
-  <button class="fab" onclick="goTab('registrar',null)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -1435,12 +1440,12 @@ async function analyzePhoto(b64,mime){
     ]}]);
     _stopPhotoLoading();
     const p=JSON.parse(txt);
-    window._pItems=p.itens;
     const qc=p.qualidade==='boa'?'bg':p.qualidade==='razoavel'?'ba':'br';
     const ql=p.qualidade==='boa'?'equilibrada':p.qualidade==='razoavel'?'pode melhorar':'atenção';
+    const meal=getMealByTime();
     out.innerHTML=`
       <div class="analysis-sheet slide-up">
-        <div style="font-size:12px;font-weight:600;color:var(--green-dk);background:var(--green-lt);border-radius:8px;padding:5px 10px;margin-bottom:10px;display:inline-block">🍽 ${getMealByTime().name}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--green-dk);background:var(--green-lt);border-radius:8px;padding:5px 10px;margin-bottom:10px;display:inline-block">🍽 ${meal.name}</div>
         <div class="air" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px">
           <span>${p.analise} — <strong>${p.totalKcal} kcal</strong></span>
           <span class="badge ${qc}">${ql}</span>
@@ -1449,31 +1454,17 @@ async function analyzePhoto(b64,mime){
           ${p.itens.map(it=>`
             <div class="citem">
               <div style="flex:1;min-width:0"><div class="cname">${it.nome}</div><div class="cmacro">${it.porcao} · ${it.kcal} kcal · P:${it.prot}g C:${it.carb}g G:${it.fat}g</div></div>
-              <button class="bo" onclick='addFoto(${JSON.stringify(it)},this)' style="font-size:12px;padding:6px 10px">+ Add</button>
             </div>`).join('')}
         </div>
-        <button class="bp" style="margin-top:12px" onclick="addAllFoto()">+ Adicionar todos</button>
+        <div id="foto-confirm" style="margin-top:14px;padding:12px;background:var(--green-lt);border-radius:12px;text-align:center;font-size:15px;font-weight:700;color:var(--green-dk)">✓ Refeição adicionada!</div>
       </div>`;
+    // Auto-save all items
+    p.itens.forEach(it=>addToMeal(it,meal.idx,curImgUrl));
+    // Go home after 1.5s
+    setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),1500);
   }catch(e){_stopPhotoLoading();out.innerHTML=`<div class="air loading">Erro ao analisar a foto. (${e.message})</div>`;}
 }
 
-window._pItems=[];
-function addFoto(it,btn){
-  const{idx}=getMealByTime();
-  addToMeal(it,idx,curImgUrl);
-  btn.textContent='✓';btn.className='bo cdone';btn.disabled=true;
-  // Check if all items added → go home
-  const remaining=document.querySelectorAll('#foto-out .bo:not(.cdone)');
-  if(remaining.length===0) setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),400);
-}
-function addAllFoto(){
-  const{idx}=getMealByTime();
-  window._pItems.forEach(it=>addToMeal(it,idx,curImgUrl));
-  document.querySelectorAll('#foto-out .bo').forEach(b=>{b.textContent='✓';b.className='bo cdone';b.disabled=true;});
-  const ab=document.querySelector('#foto-out .bp');
-  if(ab){ab.textContent='✓ Todos adicionados';ab.disabled=true;}
-  setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),500);
-}
 
 // ── Text analysis ──────────────────────────────────────────────────────────
 async function analyzeText(){
