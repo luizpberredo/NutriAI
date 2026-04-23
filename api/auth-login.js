@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'node:crypto';
 
 const kv = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
 
-    const token = crypto.randomUUID();
+    const token = randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     await kv.set(`session:${token}`, {
       userId: user.id,

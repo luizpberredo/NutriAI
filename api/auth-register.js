@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'node:crypto';
 
 const kv = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
     if (existing) return res.status(409).json({ error: 'E-mail já cadastrado' });
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const userId = crypto.randomUUID();
+    const userId = randomUUID();
     const user = {
       id: userId,
       email: email.toLowerCase().trim(),
@@ -38,7 +39,7 @@ export default async function handler(req, res) {
     };
     await kv.set(emailKey, user);
 
-    const token = crypto.randomUUID();
+    const token = randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     await kv.set(`session:${token}`, {
       userId,
