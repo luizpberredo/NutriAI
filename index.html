@@ -1429,7 +1429,7 @@ async function loadDayView(date){
   if(date>TODAY)return;
   VIEWING_DATE=date;
   renderWeekDays();
-  state={kcal:0,prot:0,carb:0,fat:0,items:[],weight:null};
+  state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:{},weight:null};
   // Show cache first
   const cached=loadDayLocal(date);
   if(cached){applyDayData(cached);renderMeals();updateRing();}
@@ -1441,6 +1441,14 @@ async function loadDayView(date){
     }
   }catch(e){console.warn('loadDayView error:',e);}
   renderMeals();updateRing();
+  // Atualiza card de atividades para o dia visualizado
+  if(_stravaData){
+    renderTodayActivities(_stravaData);
+  }else{
+    // _stravaData ainda não foi carregado nesta sessão — esconde o card
+    const card=document.getElementById('today-activities-card');
+    if(card)card.style.display='none';
+  }
   // Show banner if viewing past day
   const banner=document.getElementById('viewing-date-banner');
   if(banner){
