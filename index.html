@@ -170,7 +170,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .tag{padding:7px 13px;background:var(--white);border:1.5px solid var(--border2);border-radius:20px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .15s}
 .tag:active{border-color:var(--green);color:var(--green-dk);background:var(--green-lt)}
-/* ── History ─────────────────────────────────────────────────────────────── */
+/* ── Progress / History ──────────────────────────────────────────────────── */
 .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .sc{background:var(--white);border-radius:var(--rs);box-shadow:var(--shadow);padding:14px}
 .slbl{font-size:11px;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
@@ -183,6 +183,34 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:
 .hist-kcal{font-size:15px;font-weight:700;color:var(--green)}
 .hist-detail{display:none;padding:12px 0 4px;border-bottom:1px solid var(--border)}
 .hist-detail.open{display:block}
+/* IMC bar */
+.imc-bar-wrap{height:10px;border-radius:5px;background:linear-gradient(to right,#4FC3F7 0%,#81C784 30%,#FFD54F 55%,#FF8A65 75%,#E57373 100%);position:relative;margin:10px 0 4px}
+.imc-needle{position:absolute;top:-4px;width:3px;height:18px;background:var(--text);border-radius:2px;transform:translateX(-50%)}
+.imc-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text2);margin-top:2px}
+.imc-cat{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;margin-top:8px}
+.imc-cat.abaixo{background:#E3F2FD;color:#1565C0}
+.imc-cat.normal{background:var(--green-lt);color:var(--green-dk)}
+.imc-cat.sobrepeso{background:#FFF8E1;color:#F57F17}
+.imc-cat.obesidade{background:#FBE9E7;color:#BF360C}
+/* Bioimpedância promo card */
+.bio-promo{background:linear-gradient(135deg,#E8F9ED 0%,#F0FDF4 100%);border:1.5px dashed var(--green);border-radius:var(--rs);padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:10px}
+.bio-promo-icon{font-size:28px;line-height:1}
+.bio-promo-text{flex:1}
+.bio-promo-title{font-size:13px;font-weight:700;color:var(--green-dk)}
+.bio-promo-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.bio-promo-badge{background:var(--green-dk);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+/* Timeframe pills */
+.tf-pills{display:flex;gap:6px;margin-bottom:14px}
+.tf-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border2);color:var(--text2);background:var(--white);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.tf-pill.active{background:var(--green);border-color:var(--green);color:#fff}
+/* Top atividades */
+.top-act-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.top-act-row:last-child{border-bottom:none}
+.top-act-rank{width:22px;height:22px;border-radius:50%;background:var(--green-lt);color:var(--green-dk);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.top-act-name{flex:1;font-size:13px;font-weight:600;color:var(--text)}
+.top-act-val{font-size:12px;color:var(--text2)}
+/* Chart canvas */
+.prog-chart-wrap{position:relative;height:160px;margin:8px 0}
 /* ── Profile screen ─────────────────────────────────────────────────────── */
 .prof-avatar-wrap{display:flex;flex-direction:column;align-items:center;padding:20px 0 10px}
 .prof-avatar{width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:#fff;margin-bottom:10px}
@@ -687,14 +715,56 @@ textarea{resize:none}
     </div>
   </div>
 
-  <!-- ── PROGRESSO (Histórico) ─────────────────────────────────────────────── -->
+  <!-- ── PROGRESSO ─────────────────────────────────────────────────────────── -->
   <div class="section" id="tab-historico">
-    <div class="sgrid" id="hist-stats" style="display:none">
-      <div class="sc"><div class="slbl">Média calórica</div><div><span class="sval" id="hist-avg">—</span><span class="sunit"> kcal</span></div></div>
-      <div class="sc"><div class="slbl">Dias na meta</div><div><span class="sval" id="hist-ok">—</span></div></div>
+
+    <!-- BLOCO 1: Seu corpo -->
+    <div class="card" id="prog-body-card">
+      <div class="ctitle">Seu corpo</div>
+      <div id="prog-imc-content">
+        <div class="empty-state" style="padding:8px 0"><div class="empty-txt" style="font-size:13px">Complete seu perfil para ver seu IMC.</div></div>
+      </div>
+      <div class="bio-promo">
+        <div class="bio-promo-icon">🔬</div>
+        <div class="bio-promo-text">
+          <div class="bio-promo-title">Bioimpedância detalhada</div>
+          <div class="bio-promo-sub">Gordura corporal, massa magra, água e muito mais</div>
+        </div>
+        <div class="bio-promo-badge">Em breve</div>
+      </div>
     </div>
+
+    <!-- BLOCO 2: Esta semana -->
+    <div class="card" id="prog-week-card">
+      <div class="ctitle">Esta semana</div>
+      <div class="prog-chart-wrap"><canvas id="prog-week-chart"></canvas></div>
+      <div class="sgrid" style="margin-top:12px;margin-bottom:0">
+        <div class="sc"><div class="slbl">Dias na meta</div><div><span class="sval" id="prog-week-ongoal">—</span><span class="sunit"> /7</span></div></div>
+        <div class="sc"><div class="slbl">Min. ativos</div><div><span class="sval" id="prog-week-mins">—</span><span class="sunit"> min</span></div></div>
+        <div class="sc" style="grid-column:span 2"><div class="slbl">Balanço calórico</div><div><span class="sval" id="prog-week-balance">—</span><span class="sunit" id="prog-week-balance-unit"> kcal</span></div></div>
+      </div>
+    </div>
+
+    <!-- BLOCO 3: Histórico & Gráficos -->
+    <div class="card" id="prog-charts-card">
+      <div class="ctitle">Histórico &amp; Gráficos</div>
+      <div class="tf-pills">
+        <button class="tf-pill active" onclick="selectTf(this,7)">7 dias</button>
+        <button class="tf-pill" onclick="selectTf(this,14)">14 dias</button>
+        <button class="tf-pill" onclick="selectTf(this,30)">30 dias</button>
+      </div>
+      <div class="slbl" style="margin-bottom:6px">Kcal consumidas</div>
+      <div class="prog-chart-wrap"><canvas id="prog-kcal-chart"></canvas></div>
+      <div class="slbl" style="margin:12px 0 6px">Kcal gastas (exercício)</div>
+      <div class="prog-chart-wrap"><canvas id="prog-burn-chart"></canvas></div>
+      <div class="slbl" style="margin:12px 0 6px">Déficit / Superávit</div>
+      <div class="prog-chart-wrap"><canvas id="prog-bal-chart"></canvas></div>
+      <div id="prog-top-acts" style="margin-top:14px"></div>
+    </div>
+
+    <!-- BLOCO 4: Histórico detalhado -->
     <div class="card">
-      <div class="ctitle" style="font-size:17px;font-weight:700;color:var(--text)">Histórico de refeições</div>
+      <div class="ctitle">Histórico detalhado</div>
       <div id="hist-list">
         <div class="empty-state">
           <div class="empty-icon">📅</div>
@@ -703,6 +773,7 @@ textarea{resize:none}
         </div>
       </div>
     </div>
+
   </div>
 
   <!-- ── GRUPOS / CONECTAR ─────────────────────────────────────────────────── -->
@@ -949,6 +1020,8 @@ let _stravaData=null;       // cache das atividades Strava da sessão
 let protGoal=150,carbGoal=225,fatGoal=60;
 let state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:{},weight:null};
 let curImg=null,curImgUrl=null,wChart=null;
+let progWeekChart=null,progKcalChart=null,progBurnChart=null,progBalChart=null;
+let _progDays={},_progTf=7;
 
 // ── API helpers ────────────────────────────────────────────────────────────
 function handleUnauth(){clearAuth();currentUser=null;profile=null;resetState();showAuthOverlay();}
@@ -1534,7 +1607,7 @@ function goTab(t,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
   if(t!=='registrar')resetCamera();
-  if(t==='historico')loadHistory();
+  if(t==='historico')loadProgress();
   if(t==='integracoes')loadIntegrations();
   if(t==='perfil'){renderProfileTab();setTimeout(renderWChart,60);}
 }
@@ -1879,22 +1952,14 @@ async function renderWChart(){
 // ── History ────────────────────────────────────────────────────────────────
 async function loadHistory(){
   const list=document.getElementById('hist-list');
+  if(!list)return;
   list.innerHTML='<div class="air loading" style="text-align:center"><span class="spinner dark"></span> Carregando...</div>';
   try{
-    const d=await apiData({method:'GET',query:{action:'getAllDays'}});
-    const days=d.days||{};
+    const days=_progDays&&Object.keys(_progDays).length?_progDays:(await apiData({method:'GET',query:{action:'getAllDays'}})).days||{};
     const dates=Object.keys(days).sort().reverse();
     if(!dates.length){
       list.innerHTML=`<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-txt">Nenhum histórico ainda</div><div class="empty-sub">Registre suas refeições e elas aparecem aqui.</div></div>`;
-      document.getElementById('hist-stats').style.display='none';return;
-    }
-    const totals=dates.map(d=>days[d]?.totals?.kcal||0).filter(Boolean);
-    if(totals.length){
-      const avg=Math.round(totals.reduce((a,b)=>a+b,0)/totals.length);
-      const ok=totals.filter(k=>Math.abs(k-calorieGoal)/calorieGoal<=0.1).length;
-      document.getElementById('hist-avg').textContent=avg;
-      document.getElementById('hist-ok').textContent=ok+'/'+totals.length;
-      document.getElementById('hist-stats').style.display='';
+      return;
     }
     list.innerHTML=dates.map(date=>{
       const dd=days[date];
@@ -1920,6 +1985,177 @@ async function loadHistory(){
   }catch(e){list.innerHTML=`<div class="air loading">Erro ao carregar histórico. (${e.message})</div>`;}
 }
 function toggleHist(id){const el=document.getElementById(id);if(el)el.classList.toggle('open');}
+
+// ── Progress ───────────────────────────────────────────────────────────────
+async function loadProgress(){
+  // Fetch all days data once, then render all blocks
+  let days={};
+  try{
+    const d=await apiData({method:'GET',query:{action:'getAllDays'}});
+    days=d.days||{};
+  }catch(e){}
+  _progDays=days;
+
+  renderProgIMC();
+  renderProgWeek(days);
+  renderProgCharts(days,_progTf);
+  loadHistory(); // BLOCO 4
+}
+
+function renderProgIMC(){
+  const el=document.getElementById('prog-imc-content');
+  if(!el)return;
+  const prof=profile||{};
+  const weight=state.weight||(()=>{
+    // Try to get latest weight from history
+    const dates=Object.keys(_progDays).sort().reverse();
+    for(const d of dates){if(_progDays[d]?.weight)return _progDays[d].weight;}
+    return null;
+  })();
+  const h=parseFloat(prof.height);
+  if(!weight||!h||h<50){
+    el.innerHTML='<div class="empty-state" style="padding:8px 0"><div class="empty-txt" style="font-size:13px">Complete seu perfil (peso e altura) para ver seu IMC.</div></div>';
+    return;
+  }
+  const imc=weight/(h/100)**2;
+  let cat,catClass;
+  if(imc<18.5){cat='Abaixo do peso';catClass='abaixo';}
+  else if(imc<25){cat='Peso normal';catClass='normal';}
+  else if(imc<30){cat='Sobrepeso';catClass='sobrepeso';}
+  else{cat='Obesidade';catClass='obesidade';}
+  // Needle position: map IMC 15–40 to 0–100%
+  const pct=Math.max(0,Math.min(100,(imc-15)/25*100));
+  el.innerHTML=`
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
+      <span style="font-size:36px;font-weight:800;color:var(--text);line-height:1">${imc.toFixed(1)}</span>
+      <span style="font-size:13px;color:var(--text2)">kg/m²</span>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Peso: <strong style="color:var(--text)">${weight} kg</strong> · Altura: <strong style="color:var(--text)">${h} cm</strong></div>
+    <div class="imc-bar-wrap"><div class="imc-needle" style="left:${pct}%"></div></div>
+    <div class="imc-labels"><span>15</span><span>18.5</span><span>25</span><span>30</span><span>40</span></div>
+    <span class="imc-cat ${catClass}">${cat}</span>`;
+}
+
+function renderProgWeek(days){
+  const labels=[],kcalData=[],burnData=[];
+  const goal=calorieGoal||0;
+  let onGoal=0,totalMins=0,totalBalance=0;
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const key=d.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
+    const dd=days[key];
+    const kcal=dd?.totals?.kcal||0;
+    // Strava minutes from _stravaData
+    let mins=0;
+    if(_stravaData){
+      const acts=_stravaData.filter(a=>a.date===key&&!(state.removedActivityIds[key]||[]).includes(String(a.id)));
+      mins=acts.reduce((s,a)=>s+(a.duration_min||0),0);
+      totalMins+=mins;
+    }
+    const burn=dd?.exerciseBurned||0;
+    const [,m,day]=key.split('-');
+    labels.push(`${parseInt(day)}/${parseInt(m)}`);
+    kcalData.push(kcal);
+    burnData.push(burn);
+    if(goal&&kcal>0&&Math.abs(kcal-goal)/goal<=0.1)onGoal++;
+    totalBalance+=kcal-burn;
+  }
+  document.getElementById('prog-week-ongoal').textContent=onGoal;
+  document.getElementById('prog-week-mins').textContent=totalMins||'—';
+  const balEl=document.getElementById('prog-week-balance');
+  const balUnit=document.getElementById('prog-week-balance-unit');
+  balEl.textContent=totalBalance>0?'+'+Math.round(totalBalance):Math.round(totalBalance);
+  balEl.style.color=totalBalance<=0?'var(--green-dk)':'var(--red)';
+  balUnit.textContent=' kcal';
+
+  const ctx=document.getElementById('prog-week-chart')?.getContext('2d');
+  if(!ctx)return;
+  if(progWeekChart){progWeekChart.destroy();progWeekChart=null;}
+  const goalLine=goal?labels.map(()=>goal):null;
+  const datasets=[
+    {label:'Consumidas',data:kcalData,backgroundColor:'rgba(100,149,237,.7)',borderRadius:4,order:2},
+    {label:'Gastas',data:burnData,backgroundColor:'rgba(52,199,89,.7)',borderRadius:4,order:3},
+  ];
+  if(goalLine)datasets.push({label:'Meta',data:goalLine,type:'line',borderColor:'#FF9500',borderWidth:2,borderDash:[4,3],pointRadius:0,fill:false,order:1});
+  progWeekChart=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:10},padding:8}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10},color:'#888'}},
+        y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10},color:'#888',maxTicksLimit:5}}
+      }
+    }
+  });
+}
+
+function selectTf(el,n){
+  document.querySelectorAll('.tf-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  _progTf=n;
+  renderProgCharts(_progDays,n);
+}
+
+function renderProgCharts(days,tf){
+  const labels=[],kcalData=[],burnData=[],balData=[];
+  const actCount={};
+  for(let i=tf-1;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const key=d.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
+    const dd=days[key];
+    const kcal=dd?.totals?.kcal||0;
+    const burn=dd?.exerciseBurned||0;
+    const [,m,day]=key.split('-');
+    labels.push(`${parseInt(day)}/${parseInt(m)}`);
+    kcalData.push(kcal);
+    burnData.push(burn);
+    balData.push(kcal-burn);
+    // Count activity types from _stravaData
+    if(_stravaData){
+      for(const a of _stravaData.filter(ac=>ac.date===key)){
+        const t=a.type||'Outro';
+        actCount[t]=(actCount[t]||0)+1;
+      }
+    }
+  }
+
+  function mkChart(id,data,color,existing,setter){
+    const ctx=document.getElementById(id)?.getContext('2d');
+    if(!ctx)return;
+    if(existing){existing.destroy();}
+    const isBalance=id==='prog-bal-chart';
+    const backgroundColors=isBalance?data.map(v=>v<=0?'rgba(52,199,89,.7)':'rgba(255,59,48,.7)'):color;
+    return new Chart(ctx,{
+      type:'bar',
+      data:{labels,datasets:[{data,backgroundColor:backgroundColors,borderRadius:3}]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{display:false},ticks:{font:{size:9},color:'#888',maxTicksLimit:7}},
+          y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:9},color:'#888',maxTicksLimit:4}}
+        }
+      }
+    });
+  }
+  progKcalChart=mkChart('prog-kcal-chart',kcalData,'rgba(100,149,237,.7)',progKcalChart,v=>progKcalChart=v);
+  progBurnChart=mkChart('prog-burn-chart',burnData,'rgba(52,199,89,.7)',progBurnChart,v=>progBurnChart=v);
+  progBalChart=mkChart('prog-bal-chart',balData,'rgba(100,149,237,.7)',progBalChart,v=>progBalChart=v);
+
+  // Top 3 actividades
+  const topEl=document.getElementById('prog-top-acts');
+  if(!topEl)return;
+  const sorted=Object.entries(actCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  if(!sorted.length){topEl.innerHTML='';return;}
+  topEl.innerHTML=`<div class="slbl" style="margin-bottom:6px">Top atividades</div>`+
+    sorted.map(([t,n],i)=>`<div class="top-act-row">
+      <div class="top-act-rank">${i+1}</div>
+      <div class="top-act-name">${t}</div>
+      <div class="top-act-val">${n}x</div>
+    </div>`).join('');
+}
 
 // ── Integrations ───────────────────────────────────────────────────────────
 function connectStrava(){const t=getToken();window.location.href='/api/oauth?provider=strava&action=start&token='+encodeURIComponent(t);}
