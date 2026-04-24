@@ -415,11 +415,11 @@ textarea{resize:none}
       <div class="ob-hint">Para calcular sua taxa metabólica</div>
       <div class="ob-input-row">
         <div>
-          <input class="ob-input-lg" type="number" id="p-age" placeholder="30" min="10" max="100"/>
+          <input class="ob-input-lg" type="number" inputmode="numeric" id="p-age" placeholder="Ex: 32" min="10" max="100"/>
           <div class="ob-unit">anos</div>
         </div>
         <div>
-          <input class="ob-input-lg" type="number" id="p-height" placeholder="175" min="100" max="250"/>
+          <input class="ob-input-lg" type="number" inputmode="numeric" id="p-height" placeholder="Ex: 175" min="100" max="250"/>
           <div class="ob-unit">cm</div>
         </div>
       </div>
@@ -447,11 +447,11 @@ textarea{resize:none}
       <div class="ob-hint">Hoje e onde você quer chegar</div>
       <div class="ob-input-row">
         <div>
-          <input class="ob-input-lg" type="number" id="p-weight" placeholder="70.0" step="0.1" min="30" max="300"/>
+          <input class="ob-input-lg" type="number" inputmode="decimal" id="p-weight" placeholder="Ex: 80" step="0.1" min="30" max="300"/>
           <div class="ob-unit">kg atual</div>
         </div>
         <div>
-          <input class="ob-input-lg" type="number" id="p-goal" placeholder="65.0" step="0.1" min="30" max="300"/>
+          <input class="ob-input-lg" type="number" inputmode="decimal" id="p-goal" placeholder="Ex: 72" step="0.1" min="30" max="300"/>
           <div class="ob-unit">kg meta</div>
         </div>
       </div>
@@ -490,6 +490,7 @@ textarea{resize:none}
     <div class="ob-step" id="ob-s5">
       <div class="ob-question">Em quanto tempo?</div>
       <div class="ob-hint">Arraste para escolher o prazo ideal</div>
+      <div id="ob-kcal-highlight" style="text-align:center;margin:12px 0 8px"></div>
       <div class="prazo-slider-wrap">
         <input type="range" id="prazo-slider" min="1" max="24" value="6" class="prazo-slider" oninput="updatePrazoCard()"/>
         <div class="prazo-marks">
@@ -500,6 +501,7 @@ textarea{resize:none}
     </div>
   </div>
 
+  <div id="ob-error" style="color:#FF3B30;font-size:13px;font-weight:600;text-align:center;min-height:18px;padding:0 20px;margin-bottom:4px"></div>
   <div class="ob-footer">
     <button class="ob-next-btn" id="btn-ob-next" onclick="nextObStep()">Continuar</button>
     <button class="ob-next-btn" id="btn-ob-save" onclick="saveProfile()" style="display:none">Começar 🌿</button>
@@ -1067,18 +1069,53 @@ let obStep=0;
 let selectedActivity='1.55';
 
 const OB_TOTAL=6;
+function showObError(msg){
+  const el=document.getElementById('ob-error');
+  if(!el)return;
+  el.textContent=msg;
+  if(msg)setTimeout(()=>{el.textContent='';},3000);
+}
+
 function showObStep(n){
   document.querySelectorAll('.ob-step').forEach((el,i)=>el.classList.toggle('active',i===n));
   document.getElementById('ob-progress').style.width=((n+1)/OB_TOTAL*100)+'%';
   document.getElementById('ob-back').style.visibility=n>0?'visible':'hidden';
-  document.getElementById('ob-counter').textContent=(n+1)+' de '+OB_TOTAL;
+  document.getElementById('ob-counter').textContent=n<OB_TOTAL-1?'Passo '+(n+1)+' de '+(OB_TOTAL-1):'Quase lá! 🎉';
   document.getElementById('btn-ob-next').style.display=n<OB_TOTAL-1?'':'none';
   document.getElementById('btn-ob-save').style.display=n===OB_TOTAL-1?'':'none';
-  if(n===5)updatePrazoCard(); // refresh when arriving at prazo step
+  showObError('');
+  if(n===5){
+    updatePrazoCard();
+    // Destaca meta calórica calculada
+    const w=parseFloat(document.getElementById('p-weight').value)||0;
+    const g=parseFloat(document.getElementById('p-goal').value)||0;
+    const age=parseInt(document.getElementById('p-age').value)||0;
+    const h=parseInt(document.getElementById('p-height').value)||0;
+    const act=parseFloat(document.getElementById('p-activity').value)||1.55;
+    const meses=parseInt(document.getElementById('prazo-slider')?.value)||6;
+    if(w&&g&&age&&h){
+      const r=calcPrazoData(meses,w,g,age,h,selectedSex||'m',act);
+      document.getElementById('ob-kcal-highlight').innerHTML=`<div style="font-size:13px;color:var(--text2);margin-bottom:2px">Sua meta calórica diária</div><div style="font-size:42px;font-weight:800;color:var(--green-dk);line-height:1">${r.meta}</div><div style="font-size:13px;color:var(--text2)">kcal/dia</div>`;
+    }
+  }
 }
 
 function nextObStep(){
-  if(obStep===0&&!document.getElementById('p-name').value.trim()){document.getElementById('p-name').focus();return;}
+  if(obStep===0){
+    if(!document.getElementById('p-name').value.trim()){showObError('Por favor, informe seu nome.');document.getElementById('p-name').focus();return;}
+  }
+  if(obStep===1){
+    const age=parseInt(document.getElementById('p-age').value);
+    const h=parseInt(document.getElementById('p-height').value);
+    if(!age||age<10||age>100){showObError('Informe uma idade válida (10–100 anos).');document.getElementById('p-age').focus();return;}
+    if(!h||h<100||h>250){showObError('Informe uma altura válida (100–250 cm).');document.getElementById('p-height').focus();return;}
+  }
+  if(obStep===3){
+    const w=parseFloat(document.getElementById('p-weight').value);
+    const g=parseFloat(document.getElementById('p-goal').value);
+    if(!w||w<30||w>300){showObError('Informe seu peso atual (30–300 kg).');document.getElementById('p-weight').focus();return;}
+    if(!g||g<30||g>300){showObError('Informe seu peso meta (30–300 kg).');document.getElementById('p-goal').focus();return;}
+  }
   if(obStep<OB_TOTAL-1){obStep++;showObStep(obStep);}
 }
 function prevObStep(){if(obStep>0){obStep--;showObStep(obStep);}}
@@ -1088,6 +1125,7 @@ function selActivity(el,val){
   document.getElementById('p-activity').value=val;
   document.querySelectorAll('#ob-s4 .ob-card').forEach(c=>c.classList.remove('sel'));
   el.classList.add('sel');
+  setTimeout(()=>nextObStep(),350);
 }
 
 // ── Prazo slider ───────────────────────────────────────────────────────────
@@ -1174,6 +1212,7 @@ function selSex(s){
   selectedSex=s;
   document.getElementById('rb-m').classList.toggle('sel',s==='m');
   document.getElementById('rb-f').classList.toggle('sel',s==='f');
+  setTimeout(()=>nextObStep(),350);
 }
 
 async function saveProfile(){
