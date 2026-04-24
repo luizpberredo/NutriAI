@@ -929,8 +929,12 @@ function clearAuth(){
 }
 let currentUser=null;
 
+// ── Date helpers ──────────────────────────────────────────────────────────
+function localDateSP(d){
+  return (d||new Date()).toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
+}
 // ── State ──────────────────────────────────────────────────────────────────
-const TODAY=new Date().toISOString().slice(0,10);
+const TODAY=localDateSP();
 let VIEWING_DATE=TODAY; // date currently shown in dashboard
 let profile=null;
 let calorieGoal=2000;
@@ -1388,7 +1392,7 @@ function updateStreak(dates){
   const now=new Date();
   for(let i=0;i<60;i++){
     const d=new Date(now);d.setDate(d.getDate()-i);
-    if(dates.includes(d.toISOString().slice(0,10)))streak++;
+    if(dates.includes(localDateSP(d)))streak++;
     else break;
   }
   const el=document.getElementById('streak-count');
@@ -1400,13 +1404,15 @@ function renderWeekDays(){
   const container=document.getElementById('week-days');
   if(!container)return;
   const names=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const today=new Date();
+  // Anchor to SP today so week math never drifts at UTC midnight
+  const [ty,tm,td]=TODAY.split('-').map(Number);
+  const today=new Date(ty,tm-1,td);
   const todayIdx=today.getDay();
   const monday=new Date(today);
   monday.setDate(today.getDate()-((todayIdx+6)%7));
   container.innerHTML=Array.from({length:7},(_,i)=>{
     const d=new Date(monday);d.setDate(monday.getDate()+i);
-    const dateStr=d.toISOString().slice(0,10);
+    const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const isToday=dateStr===TODAY;
     const isFuture=dateStr>TODAY;
     const isSelected=dateStr===VIEWING_DATE;
