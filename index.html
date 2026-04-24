@@ -1943,7 +1943,7 @@ async function syncStrava(){
 function renderTodayActivities(stravaAll){
   if(!stravaAll)return;
   const removed=state.removedActivityIds||[];
-  const todayActs=stravaAll.filter(a=>a.date===TODAY&&!removed.includes(a.id));
+  const todayActs=stravaAll.filter(a=>a.date===VIEWING_DATE&&!removed.includes(a.id));
   const stravaCalToday=todayActs.reduce((s,a)=>s+(a.calories||0),0);
 
   const todayCard=document.getElementById('today-activities-card');
@@ -2005,7 +2005,7 @@ async function loadIntegrations(){
 
       // ── Atividades de hoje (card home) ─── usa renderTodayActivities ──────
       renderTodayActivities(d.strava);
-      const stravaCalToday=(d.strava.filter(a=>a.date===TODAY&&!(state.removedActivityIds||[]).includes(a.id))).reduce((s,a)=>s+(a.calories||0),0);
+      const stravaCalToday=(d.strava.filter(a=>a.date===VIEWING_DATE&&!(state.removedActivityIds||[]).includes(a.id))).reduce((s,a)=>s+(a.calories||0),0);
       totalBurnedToday+=stravaCalToday;
 
       // ── Atividades tab integrações (7 dias) ──────────────────────────────
