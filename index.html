@@ -274,7 +274,8 @@ textarea{resize:none}
   max-height:85vh;overflow-y:auto
 }
 .edit-sheet.show{transform:translateY(0)}
-.edit-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px}
+.edit-sheet-handle-area{padding:14px 0 8px;margin:-20px -20px 0;cursor:grab;text-align:center}
+.edit-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;display:inline-block}
 .edit-before-after{display:flex;align-items:center;gap:10px;margin:14px 0;padding:12px;background:var(--bg);border-radius:var(--rs)}
 .edit-arrow{color:var(--text3);font-size:18px}
 .edit-val{flex:1;text-align:center}
@@ -664,7 +665,6 @@ textarea{resize:none}
     </div>
 
     <div id="panel-texto" style="display:none">
-      <select id="tmsel" style="margin-bottom:12px"><option value="0">Café da manhã</option><option value="1" selected>Almoço</option><option value="2">Lanche</option><option value="3">Jantar</option></select>
       <textarea id="fdesc" rows="3" placeholder="Ex: arroz, feijão, frango grelhado e salada..." style="margin-bottom:10px"></textarea>
       <button class="bp" id="btn-analisar" onclick="analyzeText()">Analisar com IA</button>
       <div id="texto-out" style="margin-top:12px"></div>
@@ -898,7 +898,7 @@ textarea{resize:none}
 <!-- Meal edit bottom-sheet -->
 <div class="edit-sheet-backdrop" id="edit-backdrop" onclick="closeEditSheet()"></div>
 <div class="edit-sheet" id="edit-sheet">
-  <div class="edit-sheet-handle"></div>
+  <div class="edit-sheet-handle-area" id="edit-drag-area"><div class="edit-sheet-handle"></div></div>
   <div style="font-size:17px;font-weight:800;margin-bottom:14px">Corrigir refeição</div>
   <div id="edit-sheet-img" style="margin-bottom:12px"></div>
   <div id="edit-sheet-items" style="margin-bottom:14px"></div>
@@ -941,17 +941,7 @@ let profile=null;
 let calorieGoal=2000;
 let exerciseBurnedToday=0;  // calorias gastas em exercício hoje (Strava + Google Fit)
 let protGoal=150,carbGoal=225,fatGoal=60;
-const MEAL_NAMES=['Café da manhã','Lanche da manhã','Almoço','Lanche da tarde','Jantar','Ceia'];
-function freshMeals(){return MEAL_NAMES.map(name=>({name,kcal:0,items:[]}));}
-// Ensures saved data (possibly from old 4-slot schema) always has all 6 slots
-function normalizeMeals(meals){
-  if(!Array.isArray(meals))return freshMeals();
-  const base=freshMeals();
-  // Map by name to handle reordering; fall back to index for unnamed entries
-  const byName=Object.fromEntries(meals.map(m=>m.name?[m.name,m]:[]));
-  return base.map(slot=>byName[slot.name]||slot);
-}
-let state={kcal:0,prot:0,carb:0,fat:0,meals:freshMeals(),weight:null};
+let state={kcal:0,prot:0,carb:0,fat:0,items:[],weight:null};
 let curImg=null,curImgUrl=null,wChart=null;
 
 // ── API helpers ────────────────────────────────────────────────────────────
@@ -1045,7 +1035,7 @@ async function logout(){
 }
 
 function resetState(){
-  state={kcal:0,prot:0,carb:0,fat:0,meals:freshMeals(),weight:null};
+  state={kcal:0,prot:0,carb:0,fat:0,items:[],weight:null};
 }
 
 async function postAuthInit(){
@@ -1299,12 +1289,12 @@ function openEditProfile(){
 
 // ── Today data ─────────────────────────────────────────────────────────────
 function applyDayData(dd){
-  state.meals=normalizeMeals(dd.meals||state.meals);
+  state.items=dd.items||(dd.meals?dd.meals.flatMap(m=>m.items||[]):[]);
   state.weight=dd.weight||null;
-  state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);
-  state.prot=dd.totals?.prot||0;
-  state.carb=dd.totals?.carb||0;
-  state.fat=dd.totals?.fat||0;
+  state.kcal=dd.totals?.kcal||state.items.reduce((s,i)=>s+(i.k||0),0);
+  state.prot=dd.totals?.prot||state.items.reduce((s,i)=>s+(i.prot||0),0);
+  state.carb=dd.totals?.carb||state.items.reduce((s,i)=>s+(i.carb||0),0);
+  state.fat=dd.totals?.fat||state.items.reduce((s,i)=>s+(i.fat||0),0);
   if(state.weight)document.getElementById('nw').value=state.weight;
 }
 
@@ -1312,9 +1302,6 @@ async function loadToday(){
   VIEWING_DATE=TODAY;
   const banner=document.getElementById('viewing-date-banner');
   if(banner)banner.style.display='none';
-  const mc=getMealByTime();
-  const mcd=document.getElementById('meal-cat-display');
-  if(mcd)mcd.textContent='🍽 Refeição: '+mc.name;
 
   // 1. Show localStorage cache immediately (instant render, no spinner)
   const cached=loadDayLocal(TODAY);
@@ -1377,7 +1364,7 @@ async function saveDayRedis(date,dayData,retries=3){
 
 async function saveDay(){
   const dayData={
-    meals:state.meals,
+    items:state.items,
     weight:state.weight,
     totals:{kcal:state.kcal,prot:state.prot,carb:state.carb,fat:state.fat},
     savedAt:Date.now()
@@ -1430,7 +1417,7 @@ async function loadDayView(date){
   if(date>TODAY)return;
   VIEWING_DATE=date;
   renderWeekDays();
-  state={kcal:0,prot:0,carb:0,fat:0,meals:freshMeals(),weight:null};
+  state={kcal:0,prot:0,carb:0,fat:0,items:[],weight:null};
   // Show cache first
   const cached=loadDayLocal(date);
   if(cached){applyDayData(cached);renderMeals();updateRing();}
@@ -1454,16 +1441,6 @@ async function loadDayView(date){
   }
 }
 
-// ── Meal category by device time ───────────────────────────────────────────
-function getMealByTime(){
-  const h=new Date().getHours();
-  if(h>=5&&h<10) return{idx:0,name:'Café da manhã'};
-  if(h>=10&&h<12)return{idx:1,name:'Lanche da manhã'};
-  if(h>=12&&h<15)return{idx:2,name:'Almoço'};
-  if(h>=15&&h<18)return{idx:3,name:'Lanche da tarde'};
-  if(h>=18&&h<22)return{idx:4,name:'Jantar'};
-  return{idx:5,name:'Ceia'};
-}
 
 // ── Claude API proxy ───────────────────────────────────────────────────────
 async function callProxy(messages){
@@ -1569,10 +1546,8 @@ async function analyzePhoto(b64,mime){
     const p=JSON.parse(txt);
     const qc=p.qualidade==='boa'?'bg':p.qualidade==='razoavel'?'ba':'br';
     const ql=p.qualidade==='boa'?'equilibrada':p.qualidade==='razoavel'?'pode melhorar':'atenção';
-    const meal=getMealByTime();
     out.innerHTML=`
       <div class="analysis-sheet slide-up">
-        <div style="font-size:12px;font-weight:600;color:var(--green-dk);background:var(--green-lt);border-radius:8px;padding:5px 10px;margin-bottom:10px;display:inline-block">🍽 ${meal.name}</div>
         <div class="air" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px">
           <span>${p.analise} — <strong>${p.totalKcal} kcal</strong></span>
           <span class="badge ${qc}">${ql}</span>
@@ -1580,13 +1555,13 @@ async function analyzePhoto(b64,mime){
         <div class="clist">
           ${p.itens.map(it=>`
             <div class="citem">
-              <div style="flex:1;min-width:0"><div class="cname">${it.nome}</div><div class="cmacro">${it.porcao} · ${it.kcal} kcal · P:${it.prot}g C:${it.carb}g G:${it.fat}g</div></div>
+              <div style="flex:1;min-width:0"><div class="cname">${it.nome}</div><div class="cmacro">${it.porcao} · ${it.kcal} kcal · 🍗${it.prot}g 🌾${it.carb}g 🥑${it.fat}g</div></div>
             </div>`).join('')}
         </div>
         <div id="foto-confirm" style="margin-top:14px;padding:12px;background:var(--green-lt);border-radius:12px;text-align:center;font-size:15px;font-weight:700;color:var(--green-dk)">✓ Refeição adicionada!</div>
       </div>`;
-    // Auto-save all items
-    p.itens.forEach(it=>addToMeal(it,meal.idx,curImgUrl));
+    // Auto-save all items from photo
+    p.itens.forEach(it=>addItem(it,curImgUrl));
     // Go home after 1.5s
     setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),1500);
   }catch(e){_stopPhotoLoading();out.innerHTML=`<div class="air loading">Erro ao analisar a foto. (${e.message})</div>`;}
@@ -1601,24 +1576,19 @@ async function analyzeText(){
   const out=document.getElementById('texto-out');
   out.innerHTML='<div class="air loading"><span class="spinner dark"></span>Analisando...</div>';
   try{
-    const txt=await callProxy([{role:'user',content:`Nutricionista brasileiro. Usuário comeu: "${desc}". SOMENTE JSON sem markdown: {"itens":[{"nome":"alimento","porcao":"200g","kcal":220,"prot":10,"carb":30,"fat":5}],"totalKcal":220,"analise":"até 60 chars"}`}]);
+    const txt=await callProxy([{role:'user',content:`Nutricionista brasileiro. Usuário comeu: "${desc}". Trate como um prato/refeição única e some os macros. SOMENTE JSON sem markdown: {"nome":"nome do prato","porcao":"porção estimada","kcal":650,"prot":40,"carb":70,"fat":12,"analise":"avaliação em até 60 chars"}`}]);
     const p=JSON.parse(txt);
-    const idx=parseInt(document.getElementById('tmsel').value);
     out.innerHTML=`
       <div class="analysis-sheet">
-        <div class="air" style="margin-bottom:12px">${p.analise} — <strong>${p.totalKcal} kcal total</strong></div>
-        <div class="clist">
-          ${p.itens.map(it=>`
-            <div class="citem">
-              <div style="flex:1;min-width:0"><div class="cname">${it.nome}</div><div class="cmacro">${it.porcao} · ${it.kcal} kcal · P:${it.prot}g C:${it.carb}g G:${it.fat}g</div></div>
-              <button class="bo" onclick='addTxt(${JSON.stringify(it)},${idx},this)' style="font-size:12px;padding:6px 10px">+ Add</button>
-            </div>`).join('')}
-        </div>
+        <div class="air" style="margin-bottom:8px">${p.analise} — <strong>${p.kcal} kcal</strong></div>
+        <div style="font-size:13px;color:var(--text2)">🍗${p.prot}g 🌾${p.carb}g 🥑${p.fat}g</div>
+        <div style="margin-top:14px;padding:12px;background:var(--green-lt);border-radius:12px;text-align:center;font-size:15px;font-weight:700;color:var(--green-dk)">✓ Adicionado!</div>
       </div>`;
+    addItem(p,null);
+    setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),1500);
   }catch(e){out.innerHTML=`<div class="air loading">Erro ao analisar. (${e.message})</div>`;}
   btn.disabled=false;btn.textContent='Analisar com IA';
 }
-function addTxt(it,idx,btn){addToMeal(it,idx,null);btn.textContent='✓';btn.className='bo cdone';btn.disabled=true;}
 function quickAdd(t){document.getElementById('fdesc').value=t;selMethod('texto');analyzeText();}
 
 // ── Add to meal ────────────────────────────────────────────────────────────
@@ -1629,18 +1599,19 @@ function normMacros(it){
     fat:+(it.fat??it.gordura??0),
   };
 }
-function addToMeal(it,idx,img){
+function addItem(it,img){
   const m=normMacros(it);
-  state.kcal+=it.kcal;state.prot+=m.prot;state.carb+=m.carb;state.fat+=m.fat;
-  state.meals[idx].kcal+=it.kcal;
-  state.meals[idx].items.push({n:it.nome,p:it.porcao,k:it.kcal,prot:m.prot,carb:m.carb,fat:m.fat,img});
+  const nome=it.nome||it.nome||it.n||'Item';
+  const porcao=it.porcao||it.p||'';
+  const kcal=it.kcal||it.k||0;
+  state.kcal+=kcal;state.prot+=m.prot;state.carb+=m.carb;state.fat+=m.fat;
+  state.items.push({n:nome,p:porcao,k:kcal,prot:m.prot,carb:m.carb,fat:m.fat,img});
   updateRing();renderMeals();saveDay();
 }
 
 // ── Render meals ───────────────────────────────────────────────────────────
 function renderMeals(){
-  const hasMeals=state.meals.some(m=>m.items.length>0);
-  if(!hasMeals){
+  if(!state.items.length){
     document.getElementById('meals-list').innerHTML=`
       <div class="empty-state">
         <div class="empty-icon">🍽️</div>
@@ -1650,10 +1621,10 @@ function renderMeals(){
       </div>`;
     return;
   }
-  document.getElementById('meals-list').innerHTML=state.meals.map((m,mi)=>`
+  document.getElementById('meals-list').innerHTML=`
     <div class="meal-sec">
-      <div class="meal-hdr"><span class="meal-t">${m.name}</span><span class="meal-k">${m.kcal} kcal</span></div>
-      ${m.items.length?`<div class="meal-items">${m.items.map((i,ii)=>`
+      <div class="meal-hdr"><span class="meal-t">Refeições de hoje</span><span class="meal-k">${state.kcal} kcal</span></div>
+      <div class="meal-items">${state.items.map((i,ii)=>`
         <div class="fitem">
           <div class="fleft">
             ${i.img?`<img src="${i.img}" class="fthumb" alt="${i.n}"/>`:''}
@@ -1664,10 +1635,11 @@ function renderMeals(){
               <div class="fkcal">${i.k} kcal</div>
               <div style="font-size:11px;color:var(--text2)">🍗${i.prot||0}g 🌾${i.carb||0}g 🥑${i.fat||0}g</div>
             </div>
-            <button onclick="openEditSheet(${mi},${ii})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--text3);touch-action:manipulation" title="Corrigir">✏️</button>
+            <button onclick="openEditSheet(${ii})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--text3);touch-action:manipulation" title="Corrigir">✏️</button>
           </div>
-        </div>`).join('')}</div>`:''}
-    </div>`).join('');
+        </div>`).join('')}
+      </div>
+    </div>`;
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────
@@ -1680,23 +1652,22 @@ function showToast(msg,duration=2500){
 }
 
 // ── Meal edit sheet ────────────────────────────────────────────────────────
-let _editMealIdx=null,_editItemIdx=null,_editNewItems=null;
+let _editItemIdx=null,_editNewItems=null;
 
-function openEditSheet(mi,ii){
-  _editMealIdx=mi;_editItemIdx=ii;_editNewItems=null;
-  const meal=state.meals[mi];
-  const item=meal.items[ii];
+function openEditSheet(ii){
+  _editItemIdx=ii;_editNewItems=null;
+  const item=state.items[ii];
   // Imagem
   const imgEl=document.getElementById('edit-sheet-img');
   imgEl.innerHTML=item.img?`<div style="position:relative"><img src="${item.img}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px" alt="foto"/></div>`:'';
-  // Items da refeição
+  // Item info
   document.getElementById('edit-sheet-items').innerHTML=`
-    <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:6px">${meal.name}</div>
     <div style="background:var(--bg);border-radius:12px;padding:10px 12px">
-      ${meal.items.map((it,idx)=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:${idx<meal.items.length-1?'1px solid var(--border)':'none'}">
-        <span style="font-size:13px;${idx===ii?'font-weight:700;color:var(--text)':'color:var(--text2)'}">${it.n}</span>
-        <span style="font-size:13px;color:var(--text2)">${it.k} kcal</span>
-      </div>`).join('')}
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-size:13px;font-weight:700">${item.n}</span>
+        <span style="font-size:13px;color:var(--text2)">${item.k} kcal</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">🍗${item.prot||0}g 🌾${item.carb||0}g 🥑${item.fat||0}g</div>
     </div>`;
   // Reset resultado
   document.getElementById('edit-correction-txt').value='';
@@ -1716,14 +1687,12 @@ function closeEditSheet(){
 }
 
 function removeEditItem(){
-  if(_editMealIdx===null||_editItemIdx===null)return;
-  const meal=state.meals[_editMealIdx];
-  meal.items.splice(_editItemIdx,1);
-  meal.kcal=meal.items.reduce((s,i)=>s+(i.k||0),0);
-  state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);
-  state.prot=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.prot||0),0),0);
-  state.carb=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.carb||0),0),0);
-  state.fat=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.fat||0),0),0);
+  if(_editItemIdx===null)return;
+  state.items.splice(_editItemIdx,1);
+  state.kcal=state.items.reduce((s,i)=>s+(i.k||0),0);
+  state.prot=state.items.reduce((s,i)=>s+(i.prot||0),0);
+  state.carb=state.items.reduce((s,i)=>s+(i.carb||0),0);
+  state.fat=state.items.reduce((s,i)=>s+(i.fat||0),0);
   updateRing();renderMeals();saveDay();
   closeEditSheet();
   showToast('Item removido');
@@ -1732,10 +1701,10 @@ function removeEditItem(){
 async function analyzeCorrection(){
   const correction=document.getElementById('edit-correction-txt').value.trim();
   if(!correction)return;
-  const meal=state.meals[_editMealIdx];
+  const item=state.items[_editItemIdx];
   const btn=document.getElementById('edit-analyze-btn');
   btn.disabled=true;btn.innerHTML='<span class="spinner dark"></span>Analisando...';
-  const itemsDesc=meal.items.map(i=>`${i.n} (${i.p}, ${i.k} kcal)`).join('; ');
+  const itemsDesc=`${item.n} (${item.p}, ${item.k} kcal)`;
   try{
     const txt=await callProxy([{role:'user',content:`Nutricionista brasileiro. Refeição original: ${itemsDesc}. Correção do usuário: "${correction}". Recalcule os macros considerando a correção. SOMENTE JSON sem markdown: {"itens":[{"nome":"nome","porcao":"porção","kcal":200,"prot":10,"carb":25,"fat":5}],"totalKcal":200}`}]);
     const p=JSON.parse(txt);
@@ -1761,22 +1730,19 @@ async function analyzeCorrection(){
 }
 
 function confirmCorrection(){
-  if(!_editNewItems||_editMealIdx===null)return;
-  const meal=state.meals[_editMealIdx];
-  const oldKcal=meal.kcal;
+  if(!_editNewItems||_editItemIdx===null)return;
+  const oldKcal=state.items[_editItemIdx].k;
+  const img=state.items[_editItemIdx].img||null;
   const newKcal=_editNewItems.reduce((s,i)=>s+i.kcal,0);
-  const img=meal.items[_editItemIdx]?.img||null;
-  // Rebuild meal items: replace all items with corrected set (meal-level correction)
-  meal.items=_editNewItems.map(it=>({n:it.nome,p:it.porcao,k:it.kcal,img}));
-  meal.kcal=newKcal;
-  // Adjust state totals
-  const diff=newKcal-oldKcal;
-  state.kcal+=diff;
-  state.prot+=(_editNewItems.reduce((s,i)=>s+(i.prot||0),0)-meal.items.reduce((s,i)=>s+(i.prot||0),0));
-  // Recalc prot/carb/fat from scratch for accuracy
-  state.prot=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.prot||0),0),0);
-  state.carb=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.carb||0),0),0);
-  state.fat=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.fat||0),0),0);
+  // Replace item with corrected items (may expand one into many)
+  state.items.splice(_editItemIdx,1,..._editNewItems.map(it=>{
+    const m=normMacros(it);
+    return{n:it.nome,p:it.porcao,k:it.kcal,prot:m.prot,carb:m.carb,fat:m.fat,img};
+  }));
+  state.kcal=state.items.reduce((s,i)=>s+(i.k||0),0);
+  state.prot=state.items.reduce((s,i)=>s+(i.prot||0),0);
+  state.carb=state.items.reduce((s,i)=>s+(i.carb||0),0);
+  state.fat=state.items.reduce((s,i)=>s+(i.fat||0),0);
   updateRing();renderMeals();saveDay();
   closeEditSheet();
   showToast('Refeição corrigida! '+oldKcal+' → '+newKcal+' kcal');
@@ -1871,12 +1837,12 @@ async function loadHistory(){
     list.innerHTML=dates.map(date=>{
       const dd=days[date];
       const kcal=dd?.totals?.kcal||0;
-      const mcount=dd?.meals?.reduce((s,m)=>s+m.items.length,0)||0;
+      const allItems=dd?.items||(dd?.meals?.flatMap(m=>m.items||[])||[]);
+      const mcount=allItems.length;
       const[y,m,day]=date.split('-');
       const label=`${day}/${m}/${y}`+(date===TODAY?' (hoje)':'');
       const pct=calorieGoal?Math.round(kcal/calorieGoal*100):0;
       const bc=pct>105?'br':pct>90?'ba':'bg';
-      const meals=(dd?.meals||[]).filter(m=>m.items.length);
       const detailId='hist-'+date;
       return`<div>
         <div class="hist-item" onclick="toggleHist('${detailId}')">
@@ -1884,7 +1850,7 @@ async function loadHistory(){
           <div style="display:flex;align-items:center;gap:8px"><span class="badge ${bc}">${pct}%</span><span class="hist-kcal">${kcal} kcal</span></div>
         </div>
         <div class="hist-detail" id="${detailId}">
-          ${meals.map(m=>`<div style="padding:6px 0"><div style="font-size:12px;font-weight:700;color:#888;margin-bottom:4px">${m.name} — ${m.kcal} kcal</div>${m.items.map(i=>`<div class="fitem" style="padding:5px 0"><div class="fleft">${i.img?`<img src="${i.img}" class="fthumb" alt="${i.n}"/>`:''}<div><div class="fname">${i.n}</div><div class="fportion">${i.p}</div></div></div><span class="fkcal">${i.k} kcal</span></div>`).join('')}</div>`).join('')}
+          ${allItems.map(i=>`<div class="fitem" style="padding:5px 0"><div class="fleft">${i.img?`<img src="${i.img}" class="fthumb" alt="${i.n}"/>`:''}<div><div class="fname">${i.n}</div><div class="fportion">${i.p}</div></div></div><span class="fkcal">${i.k} kcal</span></div>`).join('')}
           ${dd?.weight?`<div style="font-size:12px;color:#888;padding:6px 0;border-top:1px solid #F0F0F0">⚖️ Peso: <strong style="color:#1A1A1A">${dd.weight} kg</strong></div>`:''}
         </div>
       </div>`;
@@ -2100,7 +2066,7 @@ init();
 // ── Edit-sheet swipe-to-close ──────────────────────────────────────────────
 (function(){
   const sheet=document.getElementById('edit-sheet');
-  const handle=sheet.querySelector('.edit-sheet-handle');
+  const handle=document.getElementById('edit-drag-area');
   let startY=0,dragging=false;
   handle.addEventListener('touchstart',e=>{
     startY=e.touches[0].clientY;dragging=true;
