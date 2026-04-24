@@ -275,6 +275,16 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:
 .bg{background:var(--green-lt);color:var(--green-dk)}
 .ba{background:var(--orange-lt);color:var(--orange)}
 .br{background:var(--red-lt);color:var(--red)}
+/* ── Gallery + Voice ────────────────────────────────────────────────────── */
+.gallery-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:11px;background:var(--white);border:1.5px solid var(--border2);border-radius:var(--rs);font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;margin-top:10px;transition:all .15s}
+.gallery-btn:active{border-color:var(--green);color:var(--green-dk)}
+.text-input-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
+.text-input-row textarea{flex:1;margin-bottom:0}
+.mic-btn{flex-shrink:0;width:48px;height:48px;border-radius:50%;background:var(--white);border:1.5px solid var(--border2);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;padding:0;align-self:stretch;min-height:52px}
+.mic-btn.recording{background:#FF3B30;border-color:#FF3B30;animation:mic-pulse 1s ease-in-out infinite}
+@keyframes mic-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,59,48,.4)}50%{transform:scale(1.08);box-shadow:0 0 0 8px rgba(255,59,48,0)}}
+.voice-status{font-size:12px;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.voice-dot{width:7px;height:7px;border-radius:50%;background:#FF3B30;animation:mic-pulse .8s infinite}
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 .bp{width:100%;padding:15px;background:var(--green);color:#fff;border:none;border-radius:var(--rs);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
 .bp:active{opacity:.85}
@@ -697,7 +707,10 @@ textarea{resize:none}
 
     <div id="panel-foto">
       <div id="meal-cat-display" style="font-size:13px;font-weight:600;color:var(--green-dk);background:var(--green-lt);border-radius:10px;padding:7px 12px;margin-bottom:12px;display:inline-block"></div>
-      <input type="file" id="finput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)"/>
+      <!-- Câmera: abre câmera traseira -->
+      <input type="file" id="finput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event,'camera')"/>
+      <!-- Galeria: abre biblioteca de fotos (sem capture) -->
+      <input type="file" id="ginput" accept="image/*" style="display:none" onchange="handleFile(event,'gallery')"/>
       <div class="camera-zone" id="pdrop" onclick="document.getElementById('finput').click()">
         <div class="camera-guide">
           <div class="camera-btn-circle">
@@ -707,11 +720,21 @@ textarea{resize:none}
           <div class="camera-hint">Prato, embalagem, shake, qualquer alimento</div>
         </div>
       </div>
+      <button class="gallery-btn" onclick="document.getElementById('ginput').click()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Escolher da galeria
+      </button>
       <div id="foto-out"></div>
     </div>
 
     <div id="panel-texto" style="display:none">
-      <textarea id="fdesc" rows="3" placeholder="Ex: arroz, feijão, frango grelhado e salada..." style="margin-bottom:10px"></textarea>
+      <div class="text-input-row">
+        <textarea id="fdesc" rows="3" placeholder="Ex: arroz, feijão, frango grelhado e salada..."></textarea>
+        <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="Entrada por voz">🎤</button>
+      </div>
+      <div class="voice-status" id="voice-status" style="display:none">
+        <span class="voice-dot"></span><span id="voice-status-txt">Gravando...</span>
+      </div>
       <button class="bp" id="btn-analisar" onclick="analyzeText()">Analisar com IA</button>
       <div id="texto-out" style="margin-top:12px"></div>
       <div style="margin-top:20px">
@@ -1026,6 +1049,8 @@ let _stravaData=null;       // cache das atividades Strava da sessão
 let protGoal=150,carbGoal=225,fatGoal=60;
 let state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:{},weight:null};
 let curImg=null,curImgUrl=null,wChart=null;
+let _lastPhotoSource='camera'; // 'camera' | 'gallery'
+let _recognition=null,_voiceActive=false;
 let progWeekChart=null,progKcalChart=null,progBurnChart=null,progBalChart=null;
 let _progDays={},_progTf=7;
 
@@ -1593,8 +1618,9 @@ async function callProxy(messages){
 
 // ── Tab navigation ─────────────────────────────────────────────────────────
 function resetCamera(){
-  curImg=null;curImgUrl=null;
+  curImg=null;curImgUrl=null;_lastPhotoSource='camera';
   const inp=document.getElementById('finput');if(inp)inp.value='';
+  const gin=document.getElementById('ginput');if(gin)gin.value='';
   const drop=document.getElementById('pdrop');
   if(drop){
     drop.classList.remove('hasimg');
@@ -1605,6 +1631,10 @@ function resetCamera(){
     </div>`;
   }
   const out=document.getElementById('foto-out');if(out)out.innerHTML='';
+  // Reset voice
+  stopVoice();
+  const vs=document.getElementById('voice-status');if(vs)vs.style.display='none';
+  const fd=document.getElementById('fdesc');if(fd)fd.value='';
 }
 
 function goTab(t,el){
@@ -1626,17 +1656,92 @@ function selMethod(m){
 }
 
 // ── Photo analysis ─────────────────────────────────────────────────────────
-function handleFile(e){
+function handleFile(e,source){
   const f=e.target.files[0];if(!f)return;
+  _lastPhotoSource=source||'camera';
   const r=new FileReader();
   r.onload=ev=>{
     const du=ev.target.result;curImgUrl=du;curImg=du.split(',')[1];
     const drop=document.getElementById('pdrop');
     drop.classList.add('hasimg');
-    drop.innerHTML=`<img src="${du}" class="ppreview" alt="foto"/><span class="chgphoto" onclick="document.getElementById('finput').click()">Trocar foto</span>`;
+    // "Trocar foto" reopens whichever source was last used
+    const inputId=_lastPhotoSource==='gallery'?'ginput':'finput';
+    drop.innerHTML=`<img src="${du}" class="ppreview" alt="foto"/><span class="chgphoto" onclick="document.getElementById('${inputId}').click()">Trocar foto</span>`;
     analyzePhoto(curImg,f.type||'image/jpeg');
   };
   r.readAsDataURL(f);
+}
+
+// ── Voice input ─────────────────────────────────────────────────────────────
+function toggleVoice(){
+  if(_voiceActive)stopVoice();
+  else startVoice();
+}
+
+function startVoice(){
+  const SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const micBtn=document.getElementById('mic-btn');
+  const vs=document.getElementById('voice-status');
+  const vsTxt=document.getElementById('voice-status-txt');
+  if(!SpeechRec){
+    if(vs){vs.style.display='flex';vs.style.color='var(--text2)';}
+    if(vsTxt)vsTxt.textContent='Áudio não suportado neste navegador';
+    setTimeout(()=>{if(vs)vs.style.display='none';},3000);
+    return;
+  }
+  _recognition=new SpeechRec();
+  _recognition.lang='pt-BR';
+  _recognition.interimResults=true;
+  _recognition.continuous=false;
+  _recognition.maxAlternatives=1;
+
+  if(micBtn){micBtn.classList.add('recording');micBtn.textContent='⏹';}
+  if(vs)vs.style.display='flex';
+  if(vsTxt)vsTxt.textContent='Gravando... (pare de falar para transcrever)';
+  _voiceActive=true;
+
+  _recognition.onresult=ev=>{
+    let transcript='';
+    for(let i=ev.resultIndex;i<ev.results.length;i++){
+      transcript+=ev.results[i][0].transcript;
+    }
+    const fd=document.getElementById('fdesc');
+    if(fd)fd.value=transcript;
+  };
+
+  _recognition.onend=()=>{
+    _voiceActive=false;
+    if(micBtn){micBtn.classList.remove('recording');micBtn.textContent='🎤';}
+    if(vs)vs.style.display='none';
+    // If text was transcribed, scroll btn-analisar into view
+    const fd=document.getElementById('fdesc');
+    if(fd?.value.trim()){
+      document.getElementById('btn-analisar')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+  };
+
+  _recognition.onerror=ev=>{
+    _voiceActive=false;
+    if(micBtn){micBtn.classList.remove('recording');micBtn.textContent='🎤';}
+    const msg=ev.error==='not-allowed'?'Permissão de microfone negada':
+               ev.error==='no-speech'?'Nenhuma fala detectada':
+               'Erro: '+ev.error;
+    if(vsTxt)vsTxt.textContent=msg;
+    if(vs){vs.style.display='flex';vs.style.color='var(--red)';}
+    setTimeout(()=>{if(vs)vs.style.display='none';},3000);
+  };
+
+  try{_recognition.start();}catch(e){
+    _voiceActive=false;
+    if(micBtn){micBtn.classList.remove('recording');micBtn.textContent='🎤';}
+  }
+}
+
+function stopVoice(){
+  if(_recognition){try{_recognition.stop();}catch(e){}_recognition=null;}
+  _voiceActive=false;
+  const micBtn=document.getElementById('mic-btn');
+  if(micBtn){micBtn.classList.remove('recording');micBtn.textContent='🎤';}
 }
 
 let _photoTimer=null;
