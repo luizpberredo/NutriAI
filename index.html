@@ -945,7 +945,7 @@ let calorieGoal=2000;
 let exerciseBurnedToday=0;  // calorias gastas em exercício hoje (Strava + Google Fit)
 let _stravaData=null;       // cache das atividades Strava da sessão
 let protGoal=150,carbGoal=225,fatGoal=60;
-let state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:[],weight:null};
+let state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:{},weight:null};
 let curImg=null,curImgUrl=null,wChart=null;
 
 // ── API helpers ────────────────────────────────────────────────────────────
@@ -1039,7 +1039,7 @@ async function logout(){
 }
 
 function resetState(){
-  state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:[],weight:null};
+  state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:{},weight:null};
 }
 
 async function postAuthInit(){
@@ -1294,7 +1294,13 @@ function openEditProfile(){
 // ── Today data ─────────────────────────────────────────────────────────────
 function applyDayData(dd){
   state.items=dd.items||(dd.meals?dd.meals.flatMap(m=>m.items||[]):[]);
-  state.removedActivityIds=dd.removedActivityIds||[];
+  // Migra formato antigo (array flat) para objeto por data
+  const rawIds=dd.removedActivityIds;
+  if(Array.isArray(rawIds)){
+    state.removedActivityIds={...state.removedActivityIds,[VIEWING_DATE]:rawIds};
+  }else{
+    state.removedActivityIds=rawIds&&typeof rawIds==='object'?rawIds:{};
+  }
   state.weight=dd.weight||null;
   state.kcal=dd.totals?.kcal||state.items.reduce((s,i)=>s+(i.k||0),0);
   state.prot=dd.totals?.prot||state.items.reduce((s,i)=>s+(i.prot||0),0);
@@ -1920,7 +1926,7 @@ async function syncStrava(){
   const list=document.getElementById('today-activities-list');
   btn.style.pointerEvents='none';btn.textContent='⏳';
   list.innerHTML='<div style="color:var(--text2);font-size:14px;text-align:center;padding:10px 0">Sincronizando...</div>';
-  state.removedActivityIds=[];
+  state.removedActivityIds[VIEWING_DATE]=[];
   saveDay();
   try{
     const token=getToken();
@@ -1942,7 +1948,7 @@ async function syncStrava(){
 
 function renderTodayActivities(stravaAll){
   if(!stravaAll)return;
-  const removed=state.removedActivityIds||[];
+  const removed=state.removedActivityIds[VIEWING_DATE]||[];
   const todayActs=stravaAll.filter(a=>a.date===VIEWING_DATE&&!removed.includes(a.id));
   const stravaCalToday=todayActs.reduce((s,a)=>s+(a.calories||0),0);
 
@@ -1980,8 +1986,8 @@ function renderTodayActivities(stravaAll){
 
 function removeActivity(id){
   if(!confirm('Remover esta atividade do seu dia?'))return;
-  if(!state.removedActivityIds)state.removedActivityIds=[];
-  state.removedActivityIds.push(id);
+  if(!state.removedActivityIds[VIEWING_DATE])state.removedActivityIds[VIEWING_DATE]=[];
+  state.removedActivityIds[VIEWING_DATE].push(id);
   saveDay();
   renderTodayActivities(_stravaData);
 }
@@ -2005,7 +2011,7 @@ async function loadIntegrations(){
 
       // ── Atividades de hoje (card home) ─── usa renderTodayActivities ──────
       renderTodayActivities(d.strava);
-      const stravaCalToday=(d.strava.filter(a=>a.date===VIEWING_DATE&&!(state.removedActivityIds||[]).includes(a.id))).reduce((s,a)=>s+(a.calories||0),0);
+      const stravaCalToday=d.strava.filter(a=>a.date===VIEWING_DATE&&!(state.removedActivityIds[VIEWING_DATE]||[]).includes(a.id)).reduce((s,a)=>s+(a.calories||0),0);
       totalBurnedToday+=stravaCalToday;
 
       // ── Atividades tab integrações (7 dias) ──────────────────────────────
