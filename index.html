@@ -940,8 +940,9 @@ let VIEWING_DATE=TODAY; // date currently shown in dashboard
 let profile=null;
 let calorieGoal=2000;
 let exerciseBurnedToday=0;  // calorias gastas em exercício hoje (Strava + Google Fit)
+let _stravaData=null;       // cache das atividades Strava da sessão
 let protGoal=150,carbGoal=225,fatGoal=60;
-let state={kcal:0,prot:0,carb:0,fat:0,items:[],weight:null};
+let state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:[],weight:null};
 let curImg=null,curImgUrl=null,wChart=null;
 
 // ── API helpers ────────────────────────────────────────────────────────────
@@ -1035,7 +1036,7 @@ async function logout(){
 }
 
 function resetState(){
-  state={kcal:0,prot:0,carb:0,fat:0,items:[],weight:null};
+  state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:[],weight:null};
 }
 
 async function postAuthInit(){
@@ -1290,6 +1291,7 @@ function openEditProfile(){
 // ── Today data ─────────────────────────────────────────────────────────────
 function applyDayData(dd){
   state.items=dd.items||(dd.meals?dd.meals.flatMap(m=>m.items||[]):[]);
+  state.removedActivityIds=dd.removedActivityIds||[];
   state.weight=dd.weight||null;
   state.kcal=dd.totals?.kcal||state.items.reduce((s,i)=>s+(i.k||0),0);
   state.prot=dd.totals?.prot||state.items.reduce((s,i)=>s+(i.prot||0),0);
@@ -1365,6 +1367,7 @@ async function saveDayRedis(date,dayData,retries=3){
 async function saveDay(){
   const dayData={
     items:state.items,
+    removedActivityIds:state.removedActivityIds,
     weight:state.weight,
     totals:{kcal:state.kcal,prot:state.prot,carb:state.carb,fat:state.fat},
     savedAt:Date.now()
@@ -1909,6 +1912,52 @@ function actIcon(type){
   return'🏅';
 }
 
+function renderTodayActivities(stravaAll){
+  if(!stravaAll)return;
+  const removed=state.removedActivityIds||[];
+  const todayActs=stravaAll.filter(a=>a.date===TODAY&&!removed.includes(a.id));
+  const stravaCalToday=todayActs.reduce((s,a)=>s+(a.calories||0),0);
+
+  const todayCard=document.getElementById('today-activities-card');
+  const todayList=document.getElementById('today-activities-list');
+  const todayTotal=document.getElementById('today-act-total');
+  todayCard.style.display='';
+  if(todayActs.length===0){
+    todayList.innerHTML='<div style="color:var(--text2);font-size:14px;text-align:center;padding:10px 0">Nenhuma atividade hoje</div>';
+    todayTotal.textContent='';
+  }else{
+    todayList.innerHTML=todayActs.map(a=>`
+      <div class="fitem">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">${actIcon(a.type)}</span>
+          <div>
+            <div class="fname">${a.name}</div>
+            <div class="fportion">${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${a.calories
+            ?`<span class="fkcal" style="color:var(--green);font-weight:700">${a.calories} kcal</span>`
+            :`<span class="fkcal" style="color:var(--text3);font-size:12px">—</span>`}
+          <button onclick="removeActivity(${a.id})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--text3);touch-action:manipulation">✕</button>
+        </div>
+      </div>`).join('');
+    todayTotal.textContent=stravaCalToday?stravaCalToday+' kcal gastas':'';
+  }
+
+  // Recalcula exerciseBurnedToday com base nos não-removidos
+  exerciseBurnedToday=stravaCalToday;
+  updateRing();
+}
+
+function removeActivity(id){
+  if(!confirm('Remover esta atividade do seu dia?'))return;
+  if(!state.removedActivityIds)state.removedActivityIds=[];
+  state.removedActivityIds.push(id);
+  saveDay();
+  renderTodayActivities(_stravaData);
+}
+
 async function loadIntegrations(){
   const params=new URLSearchParams(location.search);
   if(params.get('connected')||params.get('error'))history.replaceState({},'','/');
@@ -1924,35 +1973,12 @@ async function loadIntegrations(){
 
     if(d.strava){
       setProviderConnected('strava',true);
+      _stravaData=d.strava;
 
-      // ── Atividades de hoje (card home) ────────────────────────────────────
-      const todayActs=d.strava.filter(a=>a.date===TODAY);
-      const stravaCalToday=todayActs.reduce((s,a)=>s+(a.calories||0),0);
+      // ── Atividades de hoje (card home) ─── usa renderTodayActivities ──────
+      renderTodayActivities(d.strava);
+      const stravaCalToday=(d.strava.filter(a=>a.date===TODAY&&!(state.removedActivityIds||[]).includes(a.id))).reduce((s,a)=>s+(a.calories||0),0);
       totalBurnedToday+=stravaCalToday;
-
-      const todayCard=document.getElementById('today-activities-card');
-      const todayList=document.getElementById('today-activities-list');
-      const todayTotal=document.getElementById('today-act-total');
-      todayCard.style.display='';
-      if(todayActs.length===0){
-        todayList.innerHTML='<div style="color:var(--text2);font-size:14px;text-align:center;padding:10px 0">Nenhuma atividade hoje</div>';
-        todayTotal.textContent='';
-      }else{
-        todayList.innerHTML=todayActs.map(a=>`
-          <div class="fitem">
-            <div style="display:flex;align-items:center;gap:10px">
-              <span style="font-size:22px">${actIcon(a.type)}</span>
-              <div>
-                <div class="fname">${a.name}</div>
-                <div class="fportion">${a.duration_min} min${a.distance_km?' · '+a.distance_km+' km':''}</div>
-              </div>
-            </div>
-            ${a.calories
-              ?`<span class="fkcal" style="color:var(--green);font-weight:700">${a.calories} kcal</span>`
-              :`<span class="fkcal" style="color:var(--text3);font-size:12px">cal. não disponível</span>`}
-          </div>`).join('');
-        todayTotal.textContent=stravaCalToday?stravaCalToday+' kcal gastas':'';
-      }
 
       // ── Atividades tab integrações (7 dias) ──────────────────────────────
       const card7=document.getElementById('strava-activities-card');card7.style.display='';
