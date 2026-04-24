@@ -139,6 +139,9 @@ export default async function handler(req, res) {
         }
       }));
 
+      const todaySP = new Date().toLocaleDateString('en-CA', {timeZone:'America/Sao_Paulo'});
+      console.log('[health-data] server TODAY (SP):', todaySP);
+
       result.strava = detailed.map(a => {
         let calories = null;
         if (a.calories && a.calories > 0) {
@@ -146,11 +149,17 @@ export default async function handler(req, res) {
         } else if (a.kilojoules && a.kilojoules > 0) {
           calories = Math.round(a.kilojoules / 4.184);
         }
+        const dateSP = a.start_date ? new Date(a.start_date).toLocaleDateString('en-CA', {timeZone:'America/Sao_Paulo'}) : null;
+        console.log('[health-data] activity:', a.name,
+          '| start_date (UTC):', a.start_date,
+          '| start_date_local (athlete tz):', a.start_date_local,
+          '| date→SP:', dateSP,
+          '| isToday:', dateSP === todaySP);
         return {
           id: a.id,
           name: a.name,
           type: a.sport_type || a.type,
-          date: a.start_date ? new Date(a.start_date).toLocaleDateString('en-CA', {timeZone:'America/Sao_Paulo'}) : null,
+          date: dateSP,
           duration_min: Math.round(a.moving_time / 60),
           distance_km: a.distance ? +(a.distance / 1000).toFixed(2) : null,
           calories,
