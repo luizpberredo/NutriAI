@@ -1370,9 +1370,9 @@ async function saveDay(){
     savedAt:Date.now()
   };
   // 1. Save to localStorage immediately (survives closed tab)
-  saveDayLocal(TODAY,dayData);
+  saveDayLocal(VIEWING_DATE,dayData);
   // 2. Persist to Redis with retry (don't await — non-blocking)
-  saveDayRedis(TODAY,dayData);
+  saveDayRedis(VIEWING_DATE,dayData);
 }
 
 function updateStreak(dates){

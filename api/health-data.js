@@ -150,7 +150,7 @@ export default async function handler(req, res) {
           id: a.id,
           name: a.name,
           type: a.sport_type || a.type,
-          date: a.start_date_local?.slice(0, 10),
+          date: a.start_date ? new Date(a.start_date).toLocaleDateString('en-CA', {timeZone:'America/Sao_Paulo'}) : null,
           duration_min: Math.round(a.moving_time / 60),
           distance_km: a.distance ? +(a.distance / 1000).toFixed(2) : null,
           calories,
