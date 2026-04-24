@@ -1656,7 +1656,7 @@ function renderMeals(){
           <div style="display:flex;align-items:center;gap:8px">
             <div style="text-align:right">
               <div class="fkcal">${i.k} kcal</div>
-              <div style="font-size:11px;color:var(--text2)">🍗${i.prot||0}g 🌾${i.carb||0}g 🥑${i.fat||0}g</div>
+              <div style="display:flex;gap:10px;font-size:11px;color:var(--text2);margin-top:2px"><span>🍗 ${i.prot||0}g</span><span>🌾 ${i.carb||0}g</span><span>🥑 ${i.fat||0}g</span></div>
             </div>
             <button onclick="openEditSheet(${ii})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--text3);touch-action:manipulation" title="Corrigir">✏️</button>
           </div>
