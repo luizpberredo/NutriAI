@@ -622,7 +622,10 @@ textarea{resize:none}
     <div class="card" id="today-activities-card" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:17px;font-weight:700;color:var(--text)">🏃 Atividades de Hoje</div>
-        <div id="today-act-total" style="font-size:15px;font-weight:700;color:var(--green)"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div id="today-act-total" style="font-size:15px;font-weight:700;color:var(--green)"></div>
+          <button id="sync-strava-btn" onclick="syncStrava()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;touch-action:manipulation" title="Sincronizar Strava">🔄</button>
+        </div>
       </div>
       <div id="today-activities-list"></div>
     </div>
@@ -1910,6 +1913,31 @@ function actIcon(type){
   if(t.includes('yoga'))return'🧘';
   if(t.includes('hike'))return'🥾';
   return'🏅';
+}
+
+async function syncStrava(){
+  const btn=document.getElementById('sync-strava-btn');
+  const list=document.getElementById('today-activities-list');
+  btn.style.pointerEvents='none';btn.textContent='⏳';
+  list.innerHTML='<div style="color:var(--text2);font-size:14px;text-align:center;padding:10px 0">Sincronizando...</div>';
+  state.removedActivityIds=[];
+  saveDay();
+  try{
+    const token=getToken();
+    const r=await fetch('/api/health-data?type=activities&token='+encodeURIComponent(token));
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.strava){
+      _stravaData=d.strava;
+      renderTodayActivities(d.strava);
+    }else{
+      list.innerHTML='<div style="color:var(--text2);font-size:14px;text-align:center;padding:10px 0">Nenhuma atividade hoje</div>';
+    }
+  }catch(e){
+    list.innerHTML=`<div style="color:var(--text2);font-size:14px;text-align:center;padding:10px 0">Erro ao sincronizar</div>`;
+    showToast('Erro: '+e.message);
+  }
+  btn.style.pointerEvents='';btn.textContent='🔄';
 }
 
 function renderTodayActivities(stravaAll){
