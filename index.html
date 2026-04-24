@@ -902,6 +902,7 @@ textarea{resize:none}
   <div style="font-size:17px;font-weight:800;margin-bottom:14px">Corrigir refeição</div>
   <div id="edit-sheet-img" style="margin-bottom:12px"></div>
   <div id="edit-sheet-items" style="margin-bottom:14px"></div>
+  <button class="bp" onclick="removeEditItem()" style="background:#FF3B30;margin-bottom:14px">🗑 Apagar item</button>
   <label class="flabel">Descreva a correção</label>
   <textarea id="edit-correction-txt" rows="3" placeholder='Ex: "o queijo é Brie, não Cheddar" ou "eram 2 fatias, não 1"' style="margin-bottom:12px"></textarea>
   <button class="bp" id="edit-analyze-btn" onclick="analyzeCorrection()">Analisar correção</button>
@@ -1651,7 +1652,10 @@ function renderMeals(){
             <div><div class="fname">${i.n}</div><div class="fportion">${i.p}</div></div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            <span class="fkcal">${i.k} kcal</span>
+            <div style="text-align:right">
+              <div class="fkcal">${i.k} kcal</div>
+              <div style="font-size:11px;color:var(--text2)">P:${i.prot||0}g C:${i.carb||0}g G:${i.fat||0}g</div>
+            </div>
             <button onclick="openEditSheet(${mi},${ii})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--text3);touch-action:manipulation" title="Corrigir">✏️</button>
           </div>
         </div>`).join('')}</div>`:''}
@@ -1676,7 +1680,7 @@ function openEditSheet(mi,ii){
   const item=meal.items[ii];
   // Imagem
   const imgEl=document.getElementById('edit-sheet-img');
-  imgEl.innerHTML=item.img?`<img src="${item.img}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px" alt="foto"/>`:'';
+  imgEl.innerHTML=item.img?`<div style="position:relative"><img src="${item.img}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px" alt="foto"/></div>`:'';
   // Items da refeição
   document.getElementById('edit-sheet-items').innerHTML=`
     <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:6px">${meal.name}</div>
@@ -1698,7 +1702,23 @@ function openEditSheet(mi,ii){
 
 function closeEditSheet(){
   document.getElementById('edit-backdrop').classList.remove('show');
-  document.getElementById('edit-sheet').classList.remove('show');
+  const sheet=document.getElementById('edit-sheet');
+  sheet.classList.remove('show');
+  sheet.style.transform='';
+}
+
+function removeEditItem(){
+  if(_editMealIdx===null||_editItemIdx===null)return;
+  const meal=state.meals[_editMealIdx];
+  meal.items.splice(_editItemIdx,1);
+  meal.kcal=meal.items.reduce((s,i)=>s+(i.k||0),0);
+  state.kcal=state.meals.reduce((s,m)=>s+m.kcal,0);
+  state.prot=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.prot||0),0),0);
+  state.carb=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.carb||0),0),0);
+  state.fat=state.meals.reduce((s,m)=>s+m.items.reduce((ss,i)=>ss+(i.fat||0),0),0);
+  updateRing();renderMeals();saveDay();
+  closeEditSheet();
+  showToast('Item removido');
 }
 
 async function analyzeCorrection(){
@@ -2068,6 +2088,27 @@ async function init(){
 }
 
 init();
+
+// ── Edit-sheet swipe-to-close ──────────────────────────────────────────────
+(function(){
+  const sheet=document.getElementById('edit-sheet');
+  let startY=0,dragging=false;
+  sheet.addEventListener('touchstart',e=>{
+    if(!e.target.closest('.edit-sheet-handle'))return;
+    startY=e.touches[0].clientY;dragging=true;
+  },{passive:true});
+  sheet.addEventListener('touchmove',e=>{
+    if(!dragging)return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy>0)sheet.style.transform=`translateY(${dy}px)`;
+  },{passive:true});
+  sheet.addEventListener('touchend',e=>{
+    if(!dragging)return;
+    dragging=false;
+    const dy=e.changedTouches[0].clientY-startY;
+    if(dy>80){closeEditSheet();}else{sheet.style.transform='';}
+  });
+})();
 </script>
 </body>
 </html>
