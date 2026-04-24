@@ -1430,6 +1430,9 @@ async function loadDayView(date){
   VIEWING_DATE=date;
   renderWeekDays();
   state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:{},weight:null};
+  // Esconde card de atividades imediatamente para evitar flash do dia anterior
+  const actCard=document.getElementById('today-activities-card');
+  if(actCard)actCard.style.display='none';
   // Show cache first
   const cached=loadDayLocal(date);
   if(cached){applyDayData(cached);renderMeals();updateRing();}
