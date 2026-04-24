@@ -192,13 +192,26 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:
 .imc-cat.normal{background:var(--green-lt);color:var(--green-dk)}
 .imc-cat.sobrepeso{background:#FFF8E1;color:#F57F17}
 .imc-cat.obesidade{background:#FBE9E7;color:#BF360C}
-/* Bioimpedância promo card */
-.bio-promo{background:linear-gradient(135deg,#E8F9ED 0%,#F0FDF4 100%);border:1.5px dashed var(--green);border-radius:var(--rs);padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:10px}
-.bio-promo-icon{font-size:28px;line-height:1}
-.bio-promo-text{flex:1}
-.bio-promo-title{font-size:13px;font-weight:700;color:var(--green-dk)}
-.bio-promo-sub{font-size:11px;color:var(--text2);margin-top:2px}
-.bio-promo-badge{background:var(--green-dk);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+/* Renpho bioimpedância */
+.renpho-connect{border:1.5px dashed var(--border2);border-radius:var(--rs);padding:14px;margin-top:10px}
+.renpho-connect-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.renpho-connect-sub{font-size:11px;color:var(--text2);margin-bottom:10px}
+.renpho-input{width:100%;box-sizing:border-box;border:1.5px solid var(--border2);border-radius:10px;padding:9px 12px;font-size:14px;color:var(--text);background:var(--bg);margin-bottom:8px;font-family:inherit;outline:none;-webkit-appearance:none}
+.renpho-input:focus{border-color:var(--green)}
+.renpho-btn{width:100%;padding:11px;border-radius:12px;background:var(--green);color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;margin-top:2px}
+.renpho-btn:disabled{opacity:.6}
+.renpho-warn{font-size:10px;color:var(--text2);margin-top:8px;line-height:1.4}
+.renpho-connected-header{display:flex;align-items:center;justify-content:space-between;margin-top:10px;margin-bottom:8px}
+.renpho-sync-info{font-size:11px;color:var(--text2)}
+.renpho-sync-btn{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border2);background:var(--white);font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit}
+.renpho-disc-btn{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border2);background:var(--white);font-size:11px;font-weight:600;color:var(--red);cursor:pointer;font-family:inherit}
+.renpho-metric-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.renpho-pill{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border2);color:var(--text2);background:var(--white);cursor:pointer;transition:all .15s}
+.renpho-pill.active{background:var(--green);border-color:var(--green);color:#fff}
+.renpho-latest{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.renpho-stat{background:var(--bg);border-radius:var(--rs);padding:8px 10px;text-align:center}
+.renpho-stat-val{font-size:16px;font-weight:800;color:var(--text);line-height:1}
+.renpho-stat-lbl{font-size:9px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-top:3px}
 /* Timeframe pills */
 .tf-pills{display:flex;gap:6px;margin-bottom:14px}
 .tf-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border2);color:var(--text2);background:var(--white);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
@@ -724,14 +737,7 @@ textarea{resize:none}
       <div id="prog-imc-content">
         <div class="empty-state" style="padding:8px 0"><div class="empty-txt" style="font-size:13px">Complete seu perfil para ver seu IMC.</div></div>
       </div>
-      <div class="bio-promo">
-        <div class="bio-promo-icon">🔬</div>
-        <div class="bio-promo-text">
-          <div class="bio-promo-title">Bioimpedância detalhada</div>
-          <div class="bio-promo-sub">Gordura corporal, massa magra, água e muito mais</div>
-        </div>
-        <div class="bio-promo-badge">Em breve</div>
-      </div>
+      <div id="renpho-block"><!-- renderizado por loadRenpho() --></div>
     </div>
 
     <!-- BLOCO 2: Esta semana -->
@@ -2010,7 +2016,178 @@ async function loadProgress(){
   renderProgIMC();
   renderProgWeek(days);
   renderProgCharts(days,_progTf);
+  loadRenpho();  // BLOCO 1 — Renpho bioimpedância (independente, não bloqueia)
   loadHistory(); // BLOCO 4
+}
+
+// ── Renpho ─────────────────────────────────────────────────────────────────
+let _renphoChart=null,_renphoMetric='weight';
+
+async function loadRenpho(){
+  const el=document.getElementById('renpho-block');
+  if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:10px 0"><span class="spinner dark"></span></div>';
+  try{
+    const token=getToken();
+    const r=await fetch('/api/renpho',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'get',token})});
+    const d=await r.json();
+    if(!d.connected){
+      renderRenphoConnect(el,null);
+    }else{
+      renderRenphoConnected(el,d);
+    }
+  }catch(e){
+    renderRenphoConnect(el,null);
+  }
+}
+
+function renderRenphoConnect(el,errorMsg){
+  el.innerHTML=`
+    <div class="renpho-connect">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:22px">⚖️</span>
+        <div>
+          <div class="renpho-connect-title">Conectar balança Renpho</div>
+          <div class="renpho-connect-sub">Veja gordura, músculo, água e mais</div>
+        </div>
+      </div>
+      ${errorMsg?`<div style="color:var(--red);font-size:12px;margin-bottom:8px">⚠️ ${errorMsg}</div>`:''}
+      <input class="renpho-input" id="renpho-email" type="email" inputmode="email" placeholder="E-mail da conta Renpho" autocomplete="email"/>
+      <input class="renpho-input" id="renpho-pass" type="password" placeholder="Senha da conta Renpho" autocomplete="current-password"/>
+      <button class="renpho-btn" id="renpho-conn-btn" onclick="connectRenpho()">Conectar balança</button>
+      <div class="renpho-warn">🔒 Suas credenciais são armazenadas com criptografia AES-256 e usadas apenas para buscar seus dados da balança.</div>
+    </div>`;
+}
+
+async function connectRenpho(){
+  const email=document.getElementById('renpho-email')?.value.trim();
+  const password=document.getElementById('renpho-pass')?.value;
+  const btn=document.getElementById('renpho-conn-btn');
+  if(!email||!password){alert('Preencha e-mail e senha');return;}
+  btn.disabled=true;btn.textContent='Conectando...';
+  try{
+    const token=getToken();
+    const r=await fetch('/api/renpho',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'connect',token,email,password})});
+    const d=await r.json();
+    if(!r.ok||d.error)throw new Error(d.error||'Erro ao conectar');
+    renderRenphoConnected(document.getElementById('renpho-block'),d);
+  }catch(e){
+    btn.disabled=false;btn.textContent='Conectar balança';
+    renderRenphoConnect(document.getElementById('renpho-block'),e.message);
+  }
+}
+
+async function syncRenpho(){
+  const btn=document.getElementById('renpho-sync-btn');
+  if(btn){btn.disabled=true;btn.textContent='Sincronizando...';}
+  try{
+    const token=getToken();
+    const r=await fetch('/api/renpho',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'sync',token})});
+    const d=await r.json();
+    if(!r.ok||d.error)throw new Error(d.error||'Erro ao sincronizar');
+    renderRenphoConnected(document.getElementById('renpho-block'),d);
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='🔄 Sincronizar';}
+    alert('Erro ao sincronizar: '+e.message);
+  }
+}
+
+async function disconnectRenpho(){
+  if(!confirm('Desconectar balança Renpho? Seus dados serão removidos.'))return;
+  try{
+    const token=getToken();
+    await fetch('/api/renpho',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'disconnect',token})});
+  }catch(e){}
+  renderRenphoConnect(document.getElementById('renpho-block'),null);
+}
+
+function renderRenphoConnected(el,d){
+  const meas=d.measurements||[];
+  const last=meas[0]||{};
+  const syncAgo=d.syncedAt?Math.round((Date.now()-d.syncedAt)/60000):null;
+  const syncTxt=syncAgo===null?'—':syncAgo<1?'agora mesmo':syncAgo===1?'1 min atrás':syncAgo<60?`${syncAgo} min atrás`:Math.round(syncAgo/60)+'h atrás';
+  const metrics=[
+    {key:'weight',label:'Peso',unit:'kg'},
+    {key:'bodyfat',label:'Gordura',unit:'%'},
+    {key:'muscle_mass',label:'Músculo',unit:'%'},
+    {key:'water_percent',label:'Água',unit:'%'},
+    {key:'bmi',label:'IMC',unit:''},
+    {key:'visceral_fat',label:'Visc.',unit:''},
+  ];
+  const statsHtml=metrics.slice(0,6).map(m=>`
+    <div class="renpho-stat">
+      <div class="renpho-stat-val">${last[m.key]!=null?last[m.key]+(m.unit):'—'}</div>
+      <div class="renpho-stat-lbl">${m.label}</div>
+    </div>`).join('');
+  const pillsHtml=metrics.map(m=>`
+    <button class="renpho-pill${_renphoMetric===m.key?' active':''}" onclick="selectRenphoMetric(this,'${m.key}')">${m.label}</button>`).join('');
+  el.innerHTML=`
+    <div class="renpho-connected-header">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:18px">⚖️</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text)">Renpho conectada</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="renpho-sync-btn" id="renpho-sync-btn" onclick="syncRenpho()">🔄 Sincronizar</button>
+        <button class="renpho-disc-btn" onclick="disconnectRenpho()">Desconectar</button>
+      </div>
+    </div>
+    <div class="renpho-sync-info">Última sync: ${syncTxt}</div>
+    <div class="renpho-latest">${statsHtml}</div>
+    <div style="margin-top:12px">
+      <div class="renpho-metric-pills">${pillsHtml}</div>
+      <div class="prog-chart-wrap"><canvas id="renpho-chart"></canvas></div>
+    </div>`;
+  renderRenphoChart(meas,_renphoMetric);
+}
+
+function selectRenphoMetric(el,metric){
+  _renphoMetric=metric;
+  document.querySelectorAll('.renpho-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  // re-fetch cached measurements from DOM isn't feasible — call sync data from _progDays or re-render
+  // Instead, re-render with current data by calling loadRenpho again (lightweight get)
+  const token=getToken();
+  fetch('/api/renpho',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'get',token})})
+    .then(r=>r.json()).then(d=>{
+      if(d.measurements)renderRenphoChart(d.measurements,metric);
+    }).catch(()=>{});
+}
+
+function renderRenphoChart(measurements,metric){
+  const ctx=document.getElementById('renpho-chart')?.getContext('2d');
+  if(!ctx)return;
+  if(_renphoChart){_renphoChart.destroy();_renphoChart=null;}
+  const sorted=[...measurements].sort((a,b)=>a.time-b.time);
+  const labels=sorted.map(m=>{const[,mo,d]=m.date.split('-');return`${parseInt(d)}/${parseInt(mo)}`;});
+  const data=sorted.map(m=>m[metric]!=null?m[metric]:null);
+  const metricLabels={weight:'Peso (kg)',bodyfat:'Gordura (%)',muscle_mass:'Músculo (%)',
+    water_percent:'Água (%)',bmi:'IMC',visceral_fat:'Gord. visceral',bone_mass:'Osso (kg)',
+    protein:'Proteína (%)',metabolic_age:'Idade metab.'};
+  _renphoChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{
+      label:metricLabels[metric]||metric,
+      data,
+      borderColor:'var(--green)',
+      backgroundColor:'rgba(52,199,89,.1)',
+      borderWidth:2,pointRadius:4,pointBackgroundColor:'var(--green)',
+      fill:true,tension:.3,spanGaps:true,
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10},color:'#888'}},
+        y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10},color:'#888',maxTicksLimit:5}}
+      }
+    }
+  });
 }
 
 // Returns {date: caloriesBurned} from _stravaData, respecting removedActivityIds
