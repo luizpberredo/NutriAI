@@ -733,8 +733,11 @@ textarea{resize:none}
         <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="Entrada por voz">🎤</button>
       </div>
       <div class="voice-status" id="voice-status" style="display:none">
-        <span class="voice-dot"></span><span id="voice-status-txt">Gravando...</span>
+        <span class="voice-dot"></span>
+        <span id="voice-status-txt">Toque ⏹ para parar</span>
+        <span id="voice-timer" style="margin-left:auto;font-weight:700;color:var(--text)"></span>
       </div>
+      <div id="voice-preview" style="display:none;font-size:13px;color:var(--text2);background:var(--bg);border-radius:10px;padding:8px 12px;margin-bottom:8px;min-height:36px;line-height:1.5;font-style:italic"></div>
       <button class="bp" id="btn-analisar" onclick="analyzeText()">Analisar com IA</button>
       <div id="texto-out" style="margin-top:12px"></div>
       <div style="margin-top:20px">
@@ -1050,7 +1053,7 @@ let protGoal=150,carbGoal=225,fatGoal=60;
 let state={kcal:0,prot:0,carb:0,fat:0,items:[],removedActivityIds:{},weight:null};
 let curImg=null,curImgUrl=null,wChart=null;
 let _lastPhotoSource='camera'; // 'camera' | 'gallery'
-let _recognition=null,_voiceActive=false;
+let _recognition=null,_voiceActive=false,_voiceCountdown=null,_voiceFinal='',_voiceInterim='';
 let progWeekChart=null,progKcalChart=null,progBurnChart=null,progBalChart=null;
 let _progDays={},_progTf=7;
 
@@ -1631,9 +1634,9 @@ function resetCamera(){
     </div>`;
   }
   const out=document.getElementById('foto-out');if(out)out.innerHTML='';
-  // Reset voice
-  stopVoice();
-  const vs=document.getElementById('voice-status');if(vs)vs.style.display='none';
+  // Reset voice (discard any in-progress recording without committing)
+  if(_voiceActive&&_recognition){try{_recognition.stop();}catch(e){}}
+  _voiceCleanup(false);
   const fd=document.getElementById('fdesc');if(fd)fd.value='';
 }
 
@@ -1672,76 +1675,114 @@ function handleFile(e,source){
   r.readAsDataURL(f);
 }
 
-// ── Voice input ─────────────────────────────────────────────────────────────
+// ── Voice input (Safari-compatible toggle approach) ─────────────────────────
 function toggleVoice(){
   if(_voiceActive)stopVoice();
   else startVoice();
 }
 
 function startVoice(){
-  const SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+  // Safari first, then standard
+  const SpeechRec=window.webkitSpeechRecognition||window.SpeechRecognition;
   const micBtn=document.getElementById('mic-btn');
-  const vs=document.getElementById('voice-status');
-  const vsTxt=document.getElementById('voice-status-txt');
   if(!SpeechRec){
-    if(vs){vs.style.display='flex';vs.style.color='var(--text2)';}
-    if(vsTxt)vsTxt.textContent='Áudio não suportado neste navegador';
-    setTimeout(()=>{if(vs)vs.style.display='none';},3000);
+    // Not supported — hide the button silently
+    if(micBtn)micBtn.style.display='none';
     return;
   }
+
+  _voiceFinal='';_voiceInterim='';
+
   _recognition=new SpeechRec();
   _recognition.lang='pt-BR';
   _recognition.interimResults=true;
-  _recognition.continuous=false;
+  _recognition.continuous=false; // Safari behaves better with false
   _recognition.maxAlternatives=1;
 
-  if(micBtn){micBtn.classList.add('recording');micBtn.textContent='⏹';}
+  // --- UI: switch to recording state ---
+  if(micBtn){micBtn.classList.add('recording');micBtn.innerHTML='⏹️';micBtn.title='Toque para parar';}
+  const vs=document.getElementById('voice-status');
+  const vsTxt=document.getElementById('voice-status-txt');
+  const vsTimer=document.getElementById('voice-timer');
+  const vp=document.getElementById('voice-preview');
   if(vs)vs.style.display='flex';
-  if(vsTxt)vsTxt.textContent='Gravando... (pare de falar para transcrever)';
+  if(vsTxt)vsTxt.textContent='Toque ⏹ para parar';
+  if(vp){vp.style.display='block';vp.textContent='';}
   _voiceActive=true;
 
+  // --- 30-second safety timeout with countdown ---
+  let secsLeft=30;
+  if(vsTimer)vsTimer.textContent='⏱ '+secsLeft+'s';
+  _voiceCountdown=setInterval(()=>{
+    secsLeft--;
+    if(vsTimer)vsTimer.textContent='⏱ '+secsLeft+'s';
+    if(secsLeft<=0){clearInterval(_voiceCountdown);_voiceCountdown=null;stopVoice();}
+  },1000);
+
+  // --- Collect results (interim + final) ---
   _recognition.onresult=ev=>{
-    let transcript='';
-    for(let i=ev.resultIndex;i<ev.results.length;i++){
-      transcript+=ev.results[i][0].transcript;
+    let interim='',final='';
+    for(let i=0;i<ev.results.length;i++){
+      if(ev.results[i].isFinal)final+=ev.results[i][0].transcript;
+      else interim+=ev.results[i][0].transcript;
     }
-    const fd=document.getElementById('fdesc');
-    if(fd)fd.value=transcript;
+    if(final)_voiceFinal=final; // accumulate finals
+    // Live preview: final + current interim
+    const preview=(_voiceFinal+(interim?' '+interim:'')).trim();
+    if(vp)vp.textContent=preview||'…';
   };
 
-  _recognition.onend=()=>{
-    _voiceActive=false;
-    if(micBtn){micBtn.classList.remove('recording');micBtn.textContent='🎤';}
-    if(vs)vs.style.display='none';
-    // If text was transcribed, scroll btn-analisar into view
-    const fd=document.getElementById('fdesc');
-    if(fd?.value.trim()){
-      document.getElementById('btn-analisar')?.scrollIntoView({behavior:'smooth',block:'nearest'});
-    }
-  };
+  // --- onend fires when recognition stops (user stopped, timeout, or Safari auto-stop) ---
+  _recognition.onend=()=>{_voiceCleanup(true);};
 
+  // --- Friendly error messages ---
   _recognition.onerror=ev=>{
-    _voiceActive=false;
-    if(micBtn){micBtn.classList.remove('recording');micBtn.textContent='🎤';}
     const msg=ev.error==='not-allowed'?'Permissão de microfone negada':
-               ev.error==='no-speech'?'Nenhuma fala detectada':
+               ev.error==='no-speech'?'Nenhuma fala detectada — tente novamente':
+               ev.error==='audio-capture'?'Microfone não encontrado':
+               ev.error==='network'?'Erro de rede — verifique sua conexão':
                'Erro: '+ev.error;
-    if(vsTxt)vsTxt.textContent=msg;
-    if(vs){vs.style.display='flex';vs.style.color='var(--red)';}
-    setTimeout(()=>{if(vs)vs.style.display='none';},3000);
+    _voiceCleanup(false);
+    // Show error briefly in preview area
+    if(vp){vp.style.display='block';vp.style.color='var(--red)';vp.textContent=msg;}
+    setTimeout(()=>{if(vp){vp.style.display='none';vp.style.color='';}},3000);
   };
 
-  try{_recognition.start();}catch(e){
-    _voiceActive=false;
-    if(micBtn){micBtn.classList.remove('recording');micBtn.textContent='🎤';}
-  }
+  try{_recognition.start();}catch(e){_voiceCleanup(false);}
 }
 
 function stopVoice(){
-  if(_recognition){try{_recognition.stop();}catch(e){}_recognition=null;}
+  // Calling .stop() triggers onend → _voiceCleanup
+  if(_recognition){try{_recognition.stop();}catch(e){_voiceCleanup(false);}}
+  else{_voiceCleanup(false);}
+}
+
+function _voiceCleanup(commitText){
+  if(_voiceCountdown){clearInterval(_voiceCountdown);_voiceCountdown=null;}
   _voiceActive=false;
+  _recognition=null;
+
   const micBtn=document.getElementById('mic-btn');
-  if(micBtn){micBtn.classList.remove('recording');micBtn.textContent='🎤';}
+  if(micBtn){micBtn.classList.remove('recording');micBtn.innerHTML='🎤';micBtn.title='Entrada por voz';}
+
+  const vs=document.getElementById('voice-status');
+  if(vs)vs.style.display='none';
+
+  const vsTimer=document.getElementById('voice-timer');
+  if(vsTimer)vsTimer.textContent='';
+
+  const vp=document.getElementById('voice-preview');
+
+  const text=_voiceFinal.trim()||_voiceInterim.trim();
+  if(commitText&&text){
+    const fd=document.getElementById('fdesc');
+    if(fd){fd.value=text;fd.focus();}
+    if(vp)vp.style.display='none';
+    document.getElementById('btn-analisar')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }else{
+    if(vp)vp.style.display='none';
+  }
+  _voiceFinal='';_voiceInterim='';
 }
 
 let _photoTimer=null;
