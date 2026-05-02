@@ -421,9 +421,8 @@ textarea{resize:none}
       <div class="fgroup"><input type="email" id="l-email" placeholder="E-mail" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="fgroup"><input type="password" id="l-pass" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="auth-err" id="l-err"></div>
-      <button class="bp" id="l-btn" onclick="doLogin()" ontouchstart="">Entrar</button>
+      <button class="bp" id="l-btn" onclick="doLogin()">Entrar</button>
       <div class="auth-switch">Não tem conta? <a onclick="showAuthTab('register')">Criar conta grátis</a></div>
-      <div style="text-align:center;font-size:10px;color:#bbb;margin-top:8px">v10</div>
     </div>
 
     <!-- Register -->
@@ -434,7 +433,7 @@ textarea{resize:none}
       <div class="fgroup"><input type="email" id="r-email" placeholder="E-mail" autocomplete="email"/></div>
       <div class="fgroup"><input type="password" id="r-pass" placeholder="Senha (mín. 6 caracteres)" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
       <div class="auth-err" id="r-err"></div>
-      <button class="bp" id="r-btn" onclick="doRegister()" ontouchstart="">Criar conta</button>
+      <button class="bp" id="r-btn" onclick="doRegister()">Criar conta</button>
       <div class="auth-switch">Já tem conta? <a onclick="showAuthTab('login')">Entrar</a></div>
     </div>
   </div>
@@ -1116,7 +1115,7 @@ async function doLogin(){
     if(!r.ok)throw new Error(d.error||'Erro ao entrar');
     setToken(d.token);currentUser={userId:d.userId,email:d.email,name:d.name};
     document.getElementById('auth-overlay').style.display='none';
-    try{await postAuthInit();}catch(pe){console.error('postAuthInit:',pe);showApp();loadToday().catch(()=>{});}
+    await postAuthInit();
   }catch(e){errEl.textContent=e.message;errEl.style.display='';}
   btn.disabled=false;btn.textContent='Entrar';
 }
@@ -1821,14 +1820,6 @@ function _stopPhotoLoading(){
   setTimeout(()=>{document.getElementById('photo-loading-ov').style.display='none';bar.style.width='0%';},450);
 }
 
-
-function getMealByHour(){
-  const h=new Date().getHours();
-  if(h>=5&&h<11)return{idx:0,label:'Café da manhã'};
-  if(h>=11&&h<15)return{idx:1,label:'Almoço'};
-  if(h>=15&&h<19)return{idx:2,label:'Lanche'};
-  return{idx:3,label:'Jantar'};
-}
 async function analyzePhoto(b64,mime){
   const out=document.getElementById('foto-out');
   out.innerHTML='';
@@ -1857,7 +1848,7 @@ async function analyzePhoto(b64,mime){
         <div id="foto-confirm" style="margin-top:14px;padding:12px;background:var(--green-lt);border-radius:12px;text-align:center;font-size:15px;font-weight:700;color:var(--green-dk)">✓ Refeição adicionada!</div>
       </div>`;
     // Auto-save all items from photo
-    addMealConsolidado(p,curImgUrl);
+    p.itens.forEach(it=>addItem(it,curImgUrl));
     // Go home after 1.5s
     setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),1500);
   }catch(e){_stopPhotoLoading();out.innerHTML=`<div class="air loading">Erro ao analisar a foto. (${e.message})</div>`;}
@@ -1894,20 +1885,6 @@ function normMacros(it){
     carb:+(it.carb??it.carbs??it.carboidratos??0),
     fat:+(it.fat??it.gordura??0),
   };
-}
-
-function addMealConsolidado(p,img){
-  const meal=getMealByHour();
-  const ingredientes=(p.itens||[]).map(it=>it.nome||it.n).filter(Boolean).join(', ');
-  const nome=meal.label+(ingredientes?' com '+ingredientes:'');
-  const kcal=p.totalKcal||(p.itens||[]).reduce((s,it)=>s+(it.kcal||it.k||0),0);
-  const prot=(p.itens||[]).reduce((s,it)=>s++(it.prot??it.protein??it.proteina??0),0);
-  const carb=(p.itens||[]).reduce((s,it)=>s++(it.carb??it.carbs??it.carboidratos??0),0);
-  const fat=(p.itens||[]).reduce((s,it)=>s++(it.fat??it.gordura??0),0);
-  const porcao=(p.itens||[]).length>1
-    ?(p.itens.length+' itens')
-    :((p.itens[0]&&(p.itens[0].porcao||p.itens[0].p))||'1 porção');
-  addItem({nome,porcao,kcal,prot:+prot.toFixed(1),carb:+carb.toFixed(1),fat:+fat.toFixed(1)},img);
 }
 function addItem(it,img){
   const m=normMacros(it);
@@ -2779,23 +2756,6 @@ async function init(){
 }
 
 init();
-
-// ── Auth button bindings (touchend + click para compatibilidade Safari iOS) ──
-(function(){
-  let _running=false;
-  function _wrap(fn){
-    return function(e){
-      e.preventDefault();
-      if(_running)return;
-      _running=true;
-      Promise.resolve(fn()).finally(()=>{_running=false;});
-    };
-  }
-  const lb=document.getElementById('l-btn');
-  const rb=document.getElementById('r-btn');
-  if(lb){lb.addEventListener('touchend',_wrap(doLogin));lb.addEventListener('click',_wrap(doLogin));}
-  if(rb){rb.addEventListener('touchend',_wrap(doRegister));rb.addEventListener('click',_wrap(doRegister));}
-})();
 
 // ── Edit-sheet swipe-to-close ──────────────────────────────────────────────
 (function(){
