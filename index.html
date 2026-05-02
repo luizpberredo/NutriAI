@@ -421,8 +421,9 @@ textarea{resize:none}
       <div class="fgroup"><input type="email" id="l-email" placeholder="E-mail" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="fgroup"><input type="password" id="l-pass" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="auth-err" id="l-err"></div>
-      <button class="bp" id="l-btn" ontouchstart="">Entrar</button>
+      <button class="bp" id="l-btn" onclick="doLogin()" ontouchstart="">Entrar</button>
       <div class="auth-switch">Não tem conta? <a onclick="showAuthTab('register')">Criar conta grátis</a></div>
+      <div style="text-align:center;font-size:10px;color:#bbb;margin-top:8px">v10</div>
     </div>
 
     <!-- Register -->
@@ -433,7 +434,7 @@ textarea{resize:none}
       <div class="fgroup"><input type="email" id="r-email" placeholder="E-mail" autocomplete="email"/></div>
       <div class="fgroup"><input type="password" id="r-pass" placeholder="Senha (mín. 6 caracteres)" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
       <div class="auth-err" id="r-err"></div>
-      <button class="bp" id="r-btn" ontouchstart="">Criar conta</button>
+      <button class="bp" id="r-btn" onclick="doRegister()" ontouchstart="">Criar conta</button>
       <div class="auth-switch">Já tem conta? <a onclick="showAuthTab('login')">Entrar</a></div>
     </div>
   </div>
