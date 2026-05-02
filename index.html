@@ -421,7 +421,7 @@ textarea{resize:none}
       <div class="fgroup"><input type="email" id="l-email" placeholder="E-mail" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="fgroup"><input type="password" id="l-pass" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="auth-err" id="l-err"></div>
-      <button class="bp" id="l-btn" onclick="doLogin()" ontouchstart="">Entrar</button>
+      <button class="bp" id="l-btn" ontouchstart="">Entrar</button>
       <div class="auth-switch">Não tem conta? <a onclick="showAuthTab('register')">Criar conta grátis</a></div>
     </div>
 
@@ -433,7 +433,7 @@ textarea{resize:none}
       <div class="fgroup"><input type="email" id="r-email" placeholder="E-mail" autocomplete="email"/></div>
       <div class="fgroup"><input type="password" id="r-pass" placeholder="Senha (mín. 6 caracteres)" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
       <div class="auth-err" id="r-err"></div>
-      <button class="bp" id="r-btn" onclick="doRegister()" ontouchstart="">Criar conta</button>
+      <button class="bp" id="r-btn" ontouchstart="">Criar conta</button>
       <div class="auth-switch">Já tem conta? <a onclick="showAuthTab('login')">Entrar</a></div>
     </div>
   </div>
@@ -2778,6 +2778,23 @@ async function init(){
 }
 
 init();
+
+// ── Auth button bindings (touchend + click para compatibilidade Safari iOS) ──
+(function(){
+  let _running=false;
+  function _wrap(fn){
+    return function(e){
+      e.preventDefault();
+      if(_running)return;
+      _running=true;
+      Promise.resolve(fn()).finally(()=>{_running=false;});
+    };
+  }
+  const lb=document.getElementById('l-btn');
+  const rb=document.getElementById('r-btn');
+  if(lb){lb.addEventListener('touchend',_wrap(doLogin));lb.addEventListener('click',_wrap(doLogin));}
+  if(rb){rb.addEventListener('touchend',_wrap(doRegister));rb.addEventListener('click',_wrap(doRegister));}
+})();
 
 // ── Edit-sheet swipe-to-close ──────────────────────────────────────────────
 (function(){
