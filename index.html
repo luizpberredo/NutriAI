@@ -591,7 +591,10 @@ textarea{resize:none}
       </div>
     </div>
     <!-- Week day selector -->
-    <div class="week-row" id="week-days"></div>
+    <div id="week-slider" style="overflow:hidden;touch-action:pan-y">
+      <div class="week-row" id="week-days" style="overflow-x:visible;will-change:transform;flex-wrap:nowrap"></div>
+    </div>
+    <div id="week-nav-bar" onclick="_changeWeek(-_weekOffset)" style="display:none;text-align:center;font-size:11px;color:var(--green-dk);font-weight:600;padding:0 0 6px;cursor:pointer"></div>
   </div>
 
   <!-- ── HOJE ──────────────────────────────────────────────────────────────── -->
@@ -1164,7 +1167,7 @@ async function postAuthInit(){
         localStorage.setItem('nutriai_onboarded','1');
         applyProfile();
       }
-      showApp();await loadToday();
+      showApp();await loadToday();fetchDatesWithData();
     }else{showOnboarding();}
   }catch(e){
     console.warn('postAuthInit error:',e);
@@ -1530,6 +1533,7 @@ async function saveDay(){
   };
   // 1. Save to localStorage immediately (survives closed tab)
   saveDayLocal(VIEWING_DATE,dayData);
+  _datesWithData.add(VIEWING_DATE);
   // 2. Persist to Redis with retry (don't await — non-blocking)
   saveDayRedis(VIEWING_DATE,dayData);
 }
@@ -1548,16 +1552,26 @@ function updateStreak(dates){
 
 // ── Week days ──────────────────────────────────────────────────────────────
 let _weekOffset=0; // 0=current week, -1=last week, etc.
+let _datesWithData=new Set(); // populated from Redis on login
+
+async function fetchDatesWithData(){
+  try{
+    const d=await apiData({method:'GET',query:{action:'getDates'}});
+    if(d.dates)_datesWithData=new Set(d.dates);
+    renderWeekDays();
+  }catch(e){}
+}
 
 function _changeWeek(delta){
   const next=_weekOffset+delta;
   if(next>0)return;
-  if(next<-12)return; // max 3 months back
+  if(next<-12)return;
   _weekOffset=next;
   renderWeekDays();
 }
 
 function _dayHasData(dateStr){
+  if(_datesWithData.has(dateStr))return true;
   try{
     const s=localStorage.getItem(DAY_CACHE_KEY(dateStr));
     if(!s)return false;
@@ -1575,7 +1589,7 @@ function renderWeekDays(){
   const todayIdx=today.getDay();
   const monday=new Date(today);
   monday.setDate(today.getDate()-((todayIdx+6)%7)+_weekOffset*7);
-  const days=Array.from({length:7},(_,i)=>{
+  container.innerHTML=Array.from({length:7},(_,i)=>{
     const d=new Date(monday);d.setDate(monday.getDate()+i);
     const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const isFuture=dateStr>TODAY;
@@ -1589,12 +1603,16 @@ function renderWeekDays(){
       ${hasData?'<span class="day-dot"></span>':''}
     </div>`;
   }).join('');
-  // Week navigation indicator
-  const mo=monday.toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
-  const su=new Date(monday);su.setDate(monday.getDate()+6);
-  const suStr=su.toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
-  const weekLabel=_weekOffset===0?'':`<div id="week-nav-label" onclick="_changeWeek(${-_weekOffset})" style="grid-column:1/-1;text-align:center;font-size:11px;color:var(--green-dk);font-weight:600;padding:4px 0;cursor:pointer">${mo} – ${suStr} &nbsp;· voltar à semana atual ›</div>`;
-  container.innerHTML=days+weekLabel;
+  // Week nav bar
+  const nb=document.getElementById('week-nav-bar');
+  if(nb){
+    if(_weekOffset<0){
+      const mo=monday.toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
+      const su=new Date(monday);su.setDate(monday.getDate()+6);
+      nb.textContent=`${mo} – ${su.toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}  ·  voltar à semana atual ›`;
+      nb.style.display='';
+    }else{nb.style.display='none';}
+  }
 }
 
 async function loadDayView(date){
@@ -2827,27 +2845,61 @@ init();
   });
 })();
 
-// ── Week row swipe ─────────────────────────────────────────────────────────
+// ── Week row swipe with slide animation ───────────────────────────────────
 (function(){
+  const slider=document.getElementById('week-slider');
   const row=document.getElementById('week-days');
-  if(!row)return;
-  let sx=0,sy=0,swiping=false;
-  row.addEventListener('touchstart',e=>{
-    sx=e.touches[0].clientX;sy=e.touches[0].clientY;swiping=false;
+  if(!slider||!row)return;
+  let sx=0,sy=0,dx=0,horizontal=null,active=false;
+
+  slider.addEventListener('touchstart',e=>{
+    if(active)return;
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;dx=0;horizontal=null;
+    row.style.transition='none';
   },{passive:true});
-  row.addEventListener('touchmove',e=>{
-    const dx=e.touches[0].clientX-sx;
+
+  slider.addEventListener('touchmove',e=>{
+    if(active)return;
+    dx=e.touches[0].clientX-sx;
     const dy=e.touches[0].clientY-sy;
-    if(!swiping&&Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>8){
-      swiping=true;
+    if(horizontal===null&&(Math.abs(dx)>8||Math.abs(dy)>8)){
+      horizontal=Math.abs(dx)>Math.abs(dy);
     }
-    if(swiping)e.preventDefault();
+    if(!horizontal)return;
+    e.preventDefault();
+    // rubber-band at edges
+    let t=dx;
+    if(dx>0&&_weekOffset>=0)t=dx*0.15;
+    if(dx<0&&_weekOffset<=-12)t=dx*0.15;
+    row.style.transform=`translateX(${t}px)`;
   },{passive:false});
-  row.addEventListener('touchend',e=>{
-    if(!swiping)return;
-    const dx=e.changedTouches[0].clientX-sx;
-    if(Math.abs(dx)<40)return;
-    _changeWeek(dx>0?-1:1); // swipe right = older week, swipe left = newer week
+
+  slider.addEventListener('touchend',e=>{
+    if(active||!horizontal){row.style.transform='';return;}
+    dx=e.changedTouches[0].clientX-sx;
+    const W=slider.offsetWidth||320;
+    const dir=dx>0?-1:1; // right=older(-1), left=newer(+1)
+    const canGo=dir===-1?_weekOffset>-12:_weekOffset<0;
+    if(Math.abs(dx)>W*0.25&&canGo){
+      active=true;
+      row.style.transition='transform 0.22s ease';
+      row.style.transform=`translateX(${dir<0?W:-W}px)`;
+      setTimeout(()=>{
+        _weekOffset+=dir;
+        row.style.transition='none';
+        row.style.transform=`translateX(${dir<0?-W:W}px)`;
+        renderWeekDays();
+        // force reflow then slide in
+        void row.offsetWidth;
+        row.style.transition='transform 0.22s ease';
+        row.style.transform='translateX(0)';
+        setTimeout(()=>{row.style.transition='';active=false;},240);
+      },220);
+    }else{
+      row.style.transition='transform 0.2s ease';
+      row.style.transform='translateX(0)';
+      setTimeout(()=>{row.style.transition='';},200);
+    }
   });
 })();
 </script>
