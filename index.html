@@ -446,7 +446,7 @@ textarea{resize:none}
       <div class="fgroup"><input type="email" id="l-email" placeholder="E-mail" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="fgroup"><input type="password" id="l-pass" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="auth-err" id="l-err"></div>
-      <button class="bp" id="l-btn" onclick="doLogin()">Entrar</button>
+      <button class="bp" id="l-btn" onclick="doLogin()" ontouchstart="">Entrar</button>
       <div class="auth-switch">Não tem conta? <a onclick="showAuthTab('register')">Criar conta grátis</a></div>
     </div>
 
@@ -1127,7 +1127,6 @@ function showAuthTab(tab){
 }
 
 async function doLogin(){
-  alert('doLogin chamado'); // DEBUG TEMPORÁRIO
   const email=document.getElementById('l-email').value.trim();
   const pass=document.getElementById('l-pass').value;
   const btn=document.getElementById('l-btn');
@@ -2866,6 +2865,21 @@ async function init(){
 }
 
 init();
+
+// ── Debug: detectar elemento que intercepta toque ─────────────────────────
+document.addEventListener('touchstart',function dbgTouch(e){
+  const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+  if(el&&el.id!=='l-btn'&&el.closest('#auth-overlay')){
+    const lbtn=document.getElementById('l-btn');
+    if(lbtn){
+      const r=lbtn.getBoundingClientRect();
+      const x=e.touches[0].clientX,y=e.touches[0].clientY;
+      if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom){
+        alert('Tocou na área do botão mas elementFromPoint retornou: '+el.tagName+'#'+el.id+'.'+el.className.split(' ')[0]);
+      }
+    }
+  }
+},{once:false,passive:true});
 
 // ── Edit-sheet swipe-to-close ──────────────────────────────────────────────
 (function(){
