@@ -1133,23 +1133,30 @@ async function doLogin(){
   const errEl=document.getElementById('l-err');
   errEl.style.display='none';
   if(!email||!pass){errEl.textContent='Preencha e-mail e senha.';errEl.style.display='';return;}
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Entrando...';
+  btn.disabled=true;
+  const _dbg=t=>{errEl.style.color='#888';errEl.textContent='['+t+']';errEl.style.display='';};
+  const _spin=t=>{btn.innerHTML='<span class="spinner"></span>'+t;};
+  _spin('Autenticando…');_dbg('1/4 fetch login');
   try{
     const r=await fetch('/api/auth?action=login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    _dbg('2/4 resp '+r.status);
     const d=await r.json();
     if(!r.ok)throw new Error(d.error||'Erro ao entrar');
+    _dbg('3/4 token ok, carregando perfil…');_spin('Carregando perfil…');
     setToken(d.token);currentUser={userId:d.userId,email:d.email,name:d.name};
-    document.getElementById('auth-overlay').style.display='none';
-    try{await postAuthInit();}catch(pe){
-      // postAuthInit falhou — mostrar app de qualquer forma
+    try{
+      await postAuthInit();
+    }catch(pe){
       console.error('postAuthInit error:',pe);
+      _dbg('4/4 err: '+pe.message+' → abrindo app');
       showApp();loadToday().catch(()=>{});
     }
   }catch(e){
+    errEl.style.color='';
     errEl.textContent=e.message||'Erro ao conectar. Verifique sua conexão.';
     errEl.style.display='';
+    btn.disabled=false;btn.textContent='Entrar';
   }
-  btn.disabled=false;btn.textContent='Entrar';
 }
 
 async function doRegister(){
@@ -1184,11 +1191,17 @@ function resetState(){
 }
 
 async function postAuthInit(){
+  const _el=document.getElementById('l-err');
+  const _dbg=t=>{if(_el){_el.style.color='#888';_el.textContent='['+t+']';_el.style.display='';}};
   if(currentUser?.name)document.getElementById('p-name').value=currentUser.name;
   try{
+    _dbg('getOnboarding…');
     const ob=await apiData({method:'GET',query:{action:'getOnboarding'}});
+    _dbg('onboarding='+(ob.onboarding?'sim':'não'));
     if(ob.onboarding){
+      _dbg('getProfile…');
       const d=await apiData({method:'GET',query:{action:'getProfile'}});
+      _dbg('profile='+(d.profile?'sim':'não')+', abrindo app');
       if(d.profile){
         profile=d.profile;
         localStorage.setItem('nutriai_profile',JSON.stringify(profile));
@@ -1196,9 +1209,10 @@ async function postAuthInit(){
         applyProfile();
       }
       showApp();await loadToday();
-    }else{showOnboarding();}
+    }else{_dbg('sem onboarding → setup');showOnboarding();}
   }catch(e){
     console.warn('postAuthInit error:',e);
+    _dbg('erro: '+e.message);
     if(e.message!=='Unauthorized')showOnboarding();
   }
 }
