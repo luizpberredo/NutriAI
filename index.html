@@ -1547,6 +1547,16 @@ function updateStreak(dates){
 }
 
 // ── Week days ──────────────────────────────────────────────────────────────
+let _weekOffset=0; // 0=current week, -1=last week, etc.
+
+function _changeWeek(delta){
+  const next=_weekOffset+delta;
+  if(next>0)return;
+  if(next<-12)return; // max 3 months back
+  _weekOffset=next;
+  renderWeekDays();
+}
+
 function _dayHasData(dateStr){
   try{
     const s=localStorage.getItem(DAY_CACHE_KEY(dateStr));
@@ -1560,16 +1570,14 @@ function renderWeekDays(){
   const container=document.getElementById('week-days');
   if(!container)return;
   const names=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  // Anchor to SP today so week math never drifts at UTC midnight
   const [ty,tm,td]=TODAY.split('-').map(Number);
   const today=new Date(ty,tm-1,td);
   const todayIdx=today.getDay();
   const monday=new Date(today);
-  monday.setDate(today.getDate()-((todayIdx+6)%7));
-  container.innerHTML=Array.from({length:7},(_,i)=>{
+  monday.setDate(today.getDate()-((todayIdx+6)%7)+_weekOffset*7);
+  const days=Array.from({length:7},(_,i)=>{
     const d=new Date(monday);d.setDate(monday.getDate()+i);
     const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const isToday=dateStr===TODAY;
     const isFuture=dateStr>TODAY;
     const isSelected=dateStr===VIEWING_DATE;
     const hasData=!isFuture&&_dayHasData(dateStr);
@@ -1581,6 +1589,12 @@ function renderWeekDays(){
       ${hasData?'<span class="day-dot"></span>':''}
     </div>`;
   }).join('');
+  // Week navigation indicator
+  const mo=monday.toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
+  const su=new Date(monday);su.setDate(monday.getDate()+6);
+  const suStr=su.toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
+  const weekLabel=_weekOffset===0?'':`<div id="week-nav-label" onclick="_changeWeek(${-_weekOffset})" style="grid-column:1/-1;text-align:center;font-size:11px;color:var(--green-dk);font-weight:600;padding:4px 0;cursor:pointer">${mo} – ${suStr} &nbsp;· voltar à semana atual ›</div>`;
+  container.innerHTML=days+weekLabel;
 }
 
 async function loadDayView(date){
@@ -2810,6 +2824,30 @@ init();
     dragging=false;sheet.style.transition='';
     const dy=e.changedTouches[0].clientY-startY;
     if(dy>80)closeEditSheet();else sheet.style.transform='';
+  });
+})();
+
+// ── Week row swipe ─────────────────────────────────────────────────────────
+(function(){
+  const row=document.getElementById('week-days');
+  if(!row)return;
+  let sx=0,sy=0,swiping=false;
+  row.addEventListener('touchstart',e=>{
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;swiping=false;
+  },{passive:true});
+  row.addEventListener('touchmove',e=>{
+    const dx=e.touches[0].clientX-sx;
+    const dy=e.touches[0].clientY-sy;
+    if(!swiping&&Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>8){
+      swiping=true;
+    }
+    if(swiping)e.preventDefault();
+  },{passive:false});
+  row.addEventListener('touchend',e=>{
+    if(!swiping)return;
+    const dx=e.changedTouches[0].clientX-sx;
+    if(Math.abs(dx)<40)return;
+    _changeWeek(dx>0?-1:1); // swipe right = older week, swipe left = newer week
   });
 })();
 </script>
