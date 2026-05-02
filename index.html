@@ -58,6 +58,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:
 .day-circle.active .day-name{color:var(--green-dk)}
 .day-circle.active .day-num{background:var(--green);color:#fff}
 .day-circle.today .day-num{border:2px solid var(--green)}
+.day-dot{width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:1px}
 /* ── Bottom nav ──────────────────────────────────────────────────────────── */
 .bottom-nav{
   position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;
@@ -1546,6 +1547,15 @@ function updateStreak(dates){
 }
 
 // ── Week days ──────────────────────────────────────────────────────────────
+function _dayHasData(dateStr){
+  try{
+    const s=localStorage.getItem(DAY_CACHE_KEY(dateStr));
+    if(!s)return false;
+    const d=JSON.parse(s);
+    return (d.items&&d.items.length>0)||(d.totals&&d.totals.kcal>0);
+  }catch(e){return false;}
+}
+
 function renderWeekDays(){
   const container=document.getElementById('week-days');
   if(!container)return;
@@ -1562,11 +1572,13 @@ function renderWeekDays(){
     const isToday=dateStr===TODAY;
     const isFuture=dateStr>TODAY;
     const isSelected=dateStr===VIEWING_DATE;
+    const hasData=!isFuture&&_dayHasData(dateStr);
     const cls='day-circle'+(isSelected?' active':'')+(isFuture?' future':'');
     const click=isFuture?'':`onclick="loadDayView('${dateStr}')"`;
     return`<div class="${cls}" ${click} style="${isFuture?'opacity:.3;cursor:not-allowed':'cursor:pointer'}">
       <span class="day-name">${names[d.getDay()]}</span>
       <span class="day-num">${d.getDate()}</span>
+      ${hasData?'<span class="day-dot"></span>':''}
     </div>`;
   }).join('');
 }
@@ -1915,7 +1927,7 @@ function addItem(it,img){
   const kcal=it.kcal||it.k||0;
   state.kcal+=kcal;state.prot+=m.prot;state.carb+=m.carb;state.fat+=m.fat;
   state.items.push({n:nome,p:porcao,k:kcal,prot:m.prot,carb:m.carb,fat:m.fat,img});
-  updateRing();renderMeals();saveDay();
+  updateRing();renderMeals();saveDay();renderWeekDays();
 }
 
 // ── Render meals ───────────────────────────────────────────────────────────
