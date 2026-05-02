@@ -1833,22 +1833,33 @@ async function analyzePhoto(b64,mime){
     const p=JSON.parse(txt);
     const qc=p.qualidade==='boa'?'bg':p.qualidade==='razoavel'?'ba':'br';
     const ql=p.qualidade==='boa'?'equilibrada':p.qualidade==='razoavel'?'pode melhorar':'atenção';
+    // Consolidate all items into one meal
+    const mealName=getMealByHour();
+    const totalKcal=p.itens.reduce((s,i)=>s+(+i.kcal||0),0);
+    const totalProt=p.itens.reduce((s,i)=>s+(+i.prot||0),0);
+    const totalCarb=p.itens.reduce((s,i)=>s+(+i.carb||0),0);
+    const totalFat=p.itens.reduce((s,i)=>s+(+i.fat||0),0);
+    const foodList=p.itens.map(i=>i.nome).join(', ');
     out.innerHTML=`
       <div class="analysis-sheet slide-up">
         <div class="air" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px">
-          <span>${p.analise} — <strong>${p.totalKcal} kcal</strong></span>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px">${mealName}</div>
+            <div style="font-size:12px;color:var(--text2)">${foodList}</div>
+          </div>
           <span class="badge ${qc}">${ql}</span>
         </div>
-        <div class="clist">
-          ${p.itens.map(it=>`
-            <div class="citem">
-              <div style="flex:1;min-width:0"><div class="cname">${it.nome}</div><div class="cmacro">${it.porcao} · ${it.kcal} kcal · 🍗${it.prot}g 🌾${it.carb}g 🥑${it.fat}g</div></div>
-            </div>`).join('')}
+        <div style="display:flex;gap:16px;font-size:13px;color:var(--text2);margin-bottom:10px;padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+          <span style="font-size:16px;font-weight:700;color:var(--text)">${totalKcal} kcal</span>
+          <span>🍗 ${totalProt}g</span><span>🌾 ${totalCarb}g</span><span>🥑 ${totalFat}g</span>
+        </div>
+        <div class="clist" style="font-size:12px;color:var(--text2)">
+          ${p.itens.map(it=>`<div style="padding:3px 0">${it.nome} — ${it.kcal} kcal</div>`).join('')}
         </div>
         <div id="foto-confirm" style="margin-top:14px;padding:12px;background:var(--green-lt);border-radius:12px;text-align:center;font-size:15px;font-weight:700;color:var(--green-dk)">✓ Refeição adicionada!</div>
       </div>`;
-    // Auto-save all items from photo
-    p.itens.forEach(it=>addItem(it,curImgUrl));
+    // Save as one consolidated meal item
+    addItem({nome:mealName,porcao:foodList,kcal:totalKcal,prot:totalProt,carb:totalCarb,fat:totalFat},curImgUrl);
     // Go home after 1.5s
     setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),1500);
   }catch(e){_stopPhotoLoading();out.innerHTML=`<div class="air loading">Erro ao analisar a foto. (${e.message})</div>`;}
@@ -1877,6 +1888,17 @@ async function analyzeText(){
   btn.disabled=false;btn.textContent='Analisar com IA';
 }
 function quickAdd(t){document.getElementById('fdesc').value=t;selMethod('texto');analyzeText();}
+
+// ── Meal name by time ──────────────────────────────────────────────────────
+function getMealByHour(){
+  const h=new Date().getHours();
+  if(h>=5&&h<10)return'Café da manhã';
+  if(h>=10&&h<12)return'Lanche da manhã';
+  if(h>=12&&h<15)return'Almoço';
+  if(h>=15&&h<18)return'Lanche da tarde';
+  if(h>=18&&h<21)return'Jantar';
+  return'Ceia';
+}
 
 // ── Add to meal ────────────────────────────────────────────────────────────
 function normMacros(it){
