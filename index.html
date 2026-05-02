@@ -1820,6 +1820,14 @@ function _stopPhotoLoading(){
   setTimeout(()=>{document.getElementById('photo-loading-ov').style.display='none';bar.style.width='0%';},450);
 }
 
+
+function getMealByHour(){
+  const h=new Date().getHours();
+  if(h>=5&&h<11)return{idx:0,label:'Café da manhã'};
+  if(h>=11&&h<15)return{idx:1,label:'Almoço'};
+  if(h>=15&&h<19)return{idx:2,label:'Lanche'};
+  return{idx:3,label:'Jantar'};
+}
 async function analyzePhoto(b64,mime){
   const out=document.getElementById('foto-out');
   out.innerHTML='';
@@ -1848,7 +1856,7 @@ async function analyzePhoto(b64,mime){
         <div id="foto-confirm" style="margin-top:14px;padding:12px;background:var(--green-lt);border-radius:12px;text-align:center;font-size:15px;font-weight:700;color:var(--green-dk)">✓ Refeição adicionada!</div>
       </div>`;
     // Auto-save all items from photo
-    p.itens.forEach(it=>addItem(it,curImgUrl));
+    addMealConsolidado(p,curImgUrl);
     // Go home after 1.5s
     setTimeout(()=>goTab('hoje',document.querySelector('.nav-item')),1500);
   }catch(e){_stopPhotoLoading();out.innerHTML=`<div class="air loading">Erro ao analisar a foto. (${e.message})</div>`;}
@@ -1885,6 +1893,20 @@ function normMacros(it){
     carb:+(it.carb??it.carbs??it.carboidratos??0),
     fat:+(it.fat??it.gordura??0),
   };
+}
+
+function addMealConsolidado(p,img){
+  const meal=getMealByHour();
+  const ingredientes=(p.itens||[]).map(it=>it.nome||it.n).filter(Boolean).join(', ');
+  const nome=meal.label+(ingredientes?' com '+ingredientes:'');
+  const kcal=p.totalKcal||(p.itens||[]).reduce((s,it)=>s+(it.kcal||it.k||0),0);
+  const prot=(p.itens||[]).reduce((s,it)=>s++(it.prot??it.protein??it.proteina??0),0);
+  const carb=(p.itens||[]).reduce((s,it)=>s++(it.carb??it.carbs??it.carboidratos??0),0);
+  const fat=(p.itens||[]).reduce((s,it)=>s++(it.fat??it.gordura??0),0);
+  const porcao=(p.itens||[]).length>1
+    ?(p.itens.length+' itens')
+    :((p.itens[0]&&(p.itens[0].porcao||p.itens[0].p))||'1 porção');
+  addItem({nome,porcao,kcal,prot:+prot.toFixed(1),carb:+carb.toFixed(1),fat:+fat.toFixed(1)},img);
 }
 function addItem(it,img){
   const m=normMacros(it);
