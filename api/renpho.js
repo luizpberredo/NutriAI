@@ -57,30 +57,42 @@ async function resolveUserId(token) {
 // ── Renpho API ────────────────────────────────────────────────────────────
 const RENPHO_UA = 'Renpho/5.0.0 (iPhone; iOS 16.0; Scale)';
 
+function md5(str) {
+  const { createHash } = require('crypto');
+  return createHash('md5').update(str).digest('hex');
+}
+
 // Try multiple login strategies in sequence; return detailed error info
 async function renphoLogin(email, password) {
+  const pwdMd5 = md5(password);
   const strategies = [
-    // Strategy 1: JSON body, v3, secure_flag as string
+    // Strategy 1: MD5 hash + JSON + v3 (most common in reverse-engineered clients)
     {
       url: 'https://renpho.qnclouds.com/api/v3/users/sign_in.json?app_id=Renpho&locale=en',
       headers: { 'Content-Type': 'application/json', 'User-Agent': RENPHO_UA },
-      body: JSON.stringify({ email, password, secure_flag: '1' }),
+      body: JSON.stringify({ email, password: pwdMd5, secure_flag: '1' }),
     },
-    // Strategy 2: JSON body, v3, secure_flag as number
+    // Strategy 2: MD5 hash + JSON + v3, secure_flag number
     {
       url: 'https://renpho.qnclouds.com/api/v3/users/sign_in.json?app_id=Renpho&locale=en',
       headers: { 'Content-Type': 'application/json', 'User-Agent': RENPHO_UA },
-      body: JSON.stringify({ email, password, secure_flag: 1 }),
+      body: JSON.stringify({ email, password: pwdMd5, secure_flag: 1 }),
     },
-    // Strategy 3: form-encoded, v3
+    // Strategy 3: MD5 hash + account field alias
+    {
+      url: 'https://renpho.qnclouds.com/api/v3/users/sign_in.json?app_id=Renpho&locale=en',
+      headers: { 'Content-Type': 'application/json', 'User-Agent': RENPHO_UA },
+      body: JSON.stringify({ account: email, password: pwdMd5, secure_flag: '1' }),
+    },
+    // Strategy 4: MD5 hash + form-encoded
     {
       url: 'https://renpho.qnclouds.com/api/v3/users/sign_in.json',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': RENPHO_UA },
-      body: new URLSearchParams({ email, password, secure_flag: '1', app_id: 'Renpho', locale: 'en' }).toString(),
+      body: new URLSearchParams({ email, password: pwdMd5, secure_flag: '1', app_id: 'Renpho', locale: 'en' }).toString(),
     },
-    // Strategy 4: JSON body, v4
+    // Strategy 5: plain password fallback (some older accounts)
     {
-      url: 'https://renpho.qnclouds.com/api/v4/users/sign_in.json?app_id=Renpho&locale=en',
+      url: 'https://renpho.qnclouds.com/api/v3/users/sign_in.json?app_id=Renpho&locale=en',
       headers: { 'Content-Type': 'application/json', 'User-Agent': RENPHO_UA },
       body: JSON.stringify({ email, password, secure_flag: '1' }),
     },
